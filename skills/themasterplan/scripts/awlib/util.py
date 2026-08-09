@@ -9,7 +9,7 @@ import hashlib
 import json
 import os
 import tempfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 SCHEMA_VERSION = 1
 
@@ -20,6 +20,27 @@ class AwError(Exception):
 
 class PathSafetyError(AwError):
     """Raised when a target path escapes the repository root."""
+
+
+def is_volatile_executor_artifact(relative: str) -> bool:
+    """Return whether a state path is disposable Python bytecode.
+
+    State paths are serialized with forward slashes. Only bytecode inside
+    `.aw/bin` is ignored; source files and other unexpected executor files
+    remain subject to normal integrity checks.
+    """
+    if not isinstance(relative, str):
+        return False
+    path = PurePosixPath(relative)
+    parts = path.parts
+    return (
+        len(parts) >= 3
+        and parts[:2] == (".aw", "bin")
+        and (
+            "__pycache__" in parts
+            or path.suffix in {".pyc", ".pyo"}
+        )
+    )
 
 
 def safe_join(root: Path, relative: str) -> Path:

@@ -10,6 +10,7 @@ from .apply import (
     BLOCK_END_BYTES,
     _apply_block,
     _current_hash,
+    _executor_state,
     _make_minimal_agents,
     _prepare_sources,
     _render_template,
@@ -472,20 +473,7 @@ def _build_updated_state(project_root: Path, plan: dict) -> dict:
             "ownership": operation["ownership"],
         }
 
-    bin_root = safe_join(project_root, ".aw/bin")
-    if bin_root.is_dir():
-        for target in sorted(
-            path for path in bin_root.rglob("*") if path.is_file()
-        ):
-            relative_to_bin = target.relative_to(bin_root).as_posix()
-            destination = f".aw/bin/{relative_to_bin}"
-            digest = sha256_of_file(target)
-            managed[destination] = {
-                "source": f"<executor>:{relative_to_bin}",
-                "source_sha256": digest,
-                "installed_sha256": digest,
-                "ownership": "managed-replace",
-            }
+    managed.update(_executor_state(project_root))
 
     return {
         "schema_version": 1,

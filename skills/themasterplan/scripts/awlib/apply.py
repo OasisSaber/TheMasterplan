@@ -33,6 +33,7 @@ EXECUTOR_FILES = (
     "awlib/verify.py",
     "awlib/update.py",
     "awlib/doctor.py",
+    "awlib/update_check.py",
 )
 
 

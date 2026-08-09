@@ -392,7 +392,7 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
         """Apply must refuse when the package source file changed after planning."""
         with tempfile.TemporaryDirectory() as tmp:
             pkg = Path(tmp)
-            for sub in ("distribution", "core", "profiles", "adapters"):
+            for sub in ("distribution", "core", "profiles", "adapters", "skills"):
                 shutil.copytree(PACKAGE_ROOT / sub, pkg / sub)
             plan = plan_adopt(
                 self.root,
@@ -414,7 +414,7 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
         """A later source mismatch must fail before the first project write."""
         with tempfile.TemporaryDirectory() as tmp:
             pkg = Path(tmp)
-            for sub in ("distribution", "core", "profiles", "adapters"):
+            for sub in ("distribution", "core", "profiles", "adapters", "skills"):
                 shutil.copytree(PACKAGE_ROOT / sub, pkg / sub)
             manifest = load_manifest(pkg / "distribution" / "manifest.json")
             plan = plan_adopt(

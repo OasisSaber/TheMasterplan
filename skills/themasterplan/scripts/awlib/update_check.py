@@ -47,6 +47,7 @@ class ReleaseIdentity:
 
     def to_dict(self) -> dict:
         data: dict = {
+            "repository": self.repository,
             "version": self.version,
             "commit": self.commit,
         }
@@ -345,6 +346,10 @@ def check_update(
             )
 
     status = compare_versions(current.version, latest["version"])
+    if status == "CURRENT" and current.commit != latest["commit"]:
+        # A version label alone is not an immutable identity. Treat an equal
+        # version with a different SHA as unknown instead of claiming current.
+        status = "UNKNOWN"
     recommended = (
         "ask-user" if status == "UPDATE_AVAILABLE" else "continue"
     )

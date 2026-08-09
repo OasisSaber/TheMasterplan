@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "distribution_version": "v3.1.0",
+  "distribution_version": "v3.1.1",
   "source_repository": "OasisSaber/TheMasterplan",
   "required": [
     "core/workflow.md",
@@ -59,6 +59,12 @@
       "destination": "adapters/agent-orchestrator.md",
       "ownership": "managed-replace",
       "required": false
+    },
+    {
+      "source": "skills/themasterplan/scripts/awlib/update_check.py",
+      "destination": ".aw/bin/awlib/update_check.py",
+      "ownership": "managed-replace",
+      "required": true
     },
     {
       "source": "distribution/templates/agents-managed-block.md",

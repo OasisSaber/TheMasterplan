@@ -174,9 +174,9 @@ class DocumentationTruthTests(unittest.TestCase):
 
 
 class ManifestTests(unittest.TestCase):
-    def test_manifest_is_v310_and_contains_ao_adapter(self):
+    def test_manifest_is_v311_and_contains_ao_adapter(self):
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-        self.assertEqual(manifest["distribution_version"], "v3.1.0")
+        self.assertEqual(manifest["distribution_version"], "v3.1.1")
         self.assertIn("agent-orchestrator", manifest["components"]["adapters"])
         selected = [
             entry

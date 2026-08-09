@@ -193,14 +193,23 @@ class UpdateCheckHttpTests(unittest.TestCase):
             self._unpatch_urls()
         self.assertEqual(release.version, "v3.1.1")
 
-    def _check(self, version: str) -> dict:
+    def _check(
+        self,
+        version: str,
+        *,
+        commit: str = CURRENT_SHA,
+    ) -> dict:
         self._patch_urls()
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
                 (root / ".aw").mkdir(parents=True)
                 state = dict(STATE_JSON)
-                state["source"] = dict(state["source"], version=version)
+                state["source"] = dict(
+                    state["source"],
+                    version=version,
+                    commit=commit,
+                )
                 (root / ".aw/state.json").write_text(
                     json.dumps(state), encoding="utf-8"
                 )
@@ -217,8 +226,13 @@ class UpdateCheckHttpTests(unittest.TestCase):
         self.assertFalse(result["writes_performed"])
 
     def test_status_current(self) -> None:
-        result = self._check("v3.1.1")
+        result = self._check("v3.1.1", commit=NEXT_SHA)
         self.assertEqual(result["status"], "CURRENT")
+        self.assertEqual(result["recommended_next_step"], "continue")
+
+    def test_same_version_different_commit_is_unknown(self) -> None:
+        result = self._check("v3.1.1", commit=CURRENT_SHA)
+        self.assertEqual(result["status"], "UNKNOWN")
         self.assertEqual(result["recommended_next_step"], "continue")
 
     def test_status_ahead(self) -> None:

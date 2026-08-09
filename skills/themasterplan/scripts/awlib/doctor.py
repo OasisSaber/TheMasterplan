@@ -7,7 +7,14 @@ from pathlib import Path
 
 from .apply import EXECUTOR_FILES
 from .manifest import FULL_SHA_RE
-from .util import AwError, read_json, safe_join, sha256_of_block, sha256_of_file
+from .util import (
+    AwError,
+    is_volatile_executor_artifact,
+    read_json,
+    safe_join,
+    sha256_of_block,
+    sha256_of_file,
+)
 
 CORE_PATHS = ("core/policy.md", "core/workflow.md")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -117,6 +124,8 @@ def doctor(project_root: Path) -> dict:
         managed = {}
     else:
         for relative, recorded in managed.items():
+            if is_volatile_executor_artifact(relative):
+                continue
             if not isinstance(recorded, dict):
                 issues.append(f"malformed state entry: {relative}")
                 continue

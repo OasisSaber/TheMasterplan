@@ -10,7 +10,14 @@ from __future__ import annotations
 from pathlib import Path
 
 from .manifest import load_manifest
-from .util import AwError, read_json, safe_join, sha256_of_block, sha256_of_file
+from .util import (
+    AwError,
+    is_volatile_executor_artifact,
+    read_json,
+    safe_join,
+    sha256_of_block,
+    sha256_of_file,
+)
 
 STATUSES = ("ABSENT", "INCOMPLETE", "CURRENT", "OUTDATED", "MODIFIED", "BROKEN")
 
@@ -61,6 +68,8 @@ def _missing_required(project_root: Path, state: dict | None) -> list[str]:
                     missing.append(str(p))
         return missing
     for relative, recorded in _managed_entries(state).items():
+        if is_volatile_executor_artifact(relative):
+            continue
         try:
             target = safe_join(project_root, relative)
         except AwError:
@@ -99,6 +108,8 @@ def detect_status(project_root: Path, target_version: str | None = None) -> tupl
     missing = _missing_required(project_root, state)
     modified: list[str] = []
     for relative, recorded in managed.items():
+        if is_volatile_executor_artifact(relative):
+            continue
         if not isinstance(recorded, dict) or "installed_sha256" not in recorded:
             issues.append(f"state entry malformed: {relative}")
             continue
