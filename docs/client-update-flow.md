@@ -1,4 +1,4 @@
-# 客户项目更新检测与升级流程（v3.1.1）
+# 客户项目更新检测与升级流程（v3.2.0）
 
 > 面向采用项目说明 TheMasterplan 的更新检测行为与升级确认门。检测逻辑的
 > 权威实现是 `skills/themasterplan/scripts/awlib/update_check.py` 与
@@ -39,8 +39,7 @@ python .aw/bin/aw.py check-update --root . --json
    `REMOVED_UPSTREAM`/`LOCAL_MODIFIED`/`stop_conditions`）后，只有用户
    第二次明确批准，才运行 `apply-update`；
 3. **项目接口更新**：即使受管文件更新成功，`.github/workflows/check.yml`、
-   `scripts/check.sh`、`.opencode/`、`agent-orchestrator.yaml` 仍需单独
-   确认（这些文件不在受管清单内）。
+   `scripts/check.sh`、`.opencode/` 仍需单独确认（这些文件不在受管清单内）。
 
 TheMasterplan 不会自动升级，也不会自动修改 `uses`、`policy-ref` 或自动
 创建升级 PR。
@@ -121,15 +120,21 @@ with:
 `uses` 引用版本与 `policy-ref` **必须同时更新且一致**；禁止混合版本
 （如 `@v3.1.1` + `policy-ref: v1`）。
 
-## OpenCode / AO 入口同步
+## OpenCode 入口同步与外部工作流退让
 
-采用 Agent Orchestrator + OpenCode 的项目，`.opencode/` 下的 Skill 与命令
-入口由项目显式复制维护，不在受管清单内。升级后应同步复制最新版本：
+`.opencode/` 下的 Skill 与命令由项目显式复制维护，不在受管清单内：
 
 ```text
 .opencode/skills/themasterplan/SKILL.md
 .opencode/commands/themasterplan.md
 ```
+
+v3.2.0 起不再维护 Agent Orchestrator / Trellis 专用 Adapter。若当前任务已经
+由外部交付工作流拥有，Skill 进入 `ABSTAINED`，不运行更新检测或升级。
+
+历史采用状态若选择已删除的 `trellis` / `agent-orchestrator` Adapter，
+`plan-update` 应以 `SELECTION_CHANGED` 停止，不自动改成 `generic`。是否退出
+外部治理并重新采用 generic，必须由人类单独决定。
 
 ## 回滚
 
@@ -157,7 +162,7 @@ TheMasterplan 在任何情况下都不会自动升级：
 - 不自动运行 `plan-update`；
 - 不自动运行 `apply-update`；
 - 不自动修改 `uses` / `policy-ref` / `scripts/check.sh` / `.opencode/` /
-  `agent-orchestrator.yaml`；
+  `.opencode/`；
 - 不自动创建升级 PR；
 - 不自动 merge、release 或 deploy。
 

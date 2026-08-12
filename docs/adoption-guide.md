@@ -104,28 +104,25 @@ Release：`CURRENT` 直接继续；`UPDATE_AVAILABLE` 报告版本与提交身�
 任务。TheMasterplan 不自动升级。检测命令、确认门、缓存与离线行为见
 [client-update-flow.md](client-update-flow.md)。
 
-### Agent Orchestrator 采用
+### 外部交付工作流共存
 
-使用 Agent Orchestrator + OpenCode 的采用项目，在最小采用集合基础上追加：
+TheMasterplan 不再提供外部 orchestrator 专用 Adapter。
 
-- `adapters/agent-orchestrator.md`（AO 术语映射与自动化边界，随分发 manifest
-  安装）；
-- `.opencode/skills/themasterplan/SKILL.md` 与
-  `.opencode/commands/themasterplan.md`（OpenCode 自动发现与 `/themasterplan`
-  命令入口，薄加载器，不复制 Core 正文；当前不由分发 manifest 自动安装，
-  必须显式复制或通过模板仓库获得）；
-- 仓库根部使用扁平的 `agent-orchestrator.yaml`：`agent: opencode`、
-  `workspace: worktree`；运行 `ao start` 注册项目身份，不在本地项目配置中
-  手工写入 `path`、`projectId`、`storageKey` 或 `originUrl`；
-  `approved-and-green` 保持 `auto: false`（只通知，不自动 merge）；
-  `ci-failed` 与 `changes-requested` 可回传原 worker。
+采用项目在每个任务开始时按 `core/workflow.md` §0 判断治理所有权：
 
-完整安装、配置、故障排查、卸载与真实 smoke 清单见
-[agent-orchestrator-integration.md](agent-orchestrator-integration.md)。
-Git worktree 与 Jujutsu 路径在各自完成独立真实 smoke 前均保持 `PARTIAL`。
-AO 当前把 `auto-merge` 作为保留的 merge intent 并按通知路径处理；
-TheMasterplan 仍禁止为 `approved-and-green` 配置 `action: auto-merge`，以保留
-人类最终合并门并避免依赖未来可能变化的实现语义。
+- 直接使用 OpenCode、Codex、ChatGPT 等执行 Harness，且没有其他系统接管任务
+  生命周期时，TheMasterplan 保持 `ACTIVE`；
+- 若另一个系统已管理 worker/session、task workspace/worktree/branch、
+  Issue→PR、CI/review 路由或 merge/release/deploy 生命周期，则
+  TheMasterplan 报告 `ABSTAINED` 并停止自己的任务工作流；
+- 不通过识别工具品牌、版本、配置文件来构建兼容矩阵。
+
+`ABSTAINED` 不自动改写项目已经配置的 GitHub Actions；若项目需要完全交给
+另一个治理系统，应由人类在迁移任务中明确选择唯一治理方案。
+
+完整边界见
+[external-workflow-abstention.md](external-workflow-abstention.md)。
+
 ## 新项目
 
 1. 使用 GitHub Template Repository 创建项目。模板仅提供仓库文件；本地 Jujutsu 工作区必须自行初始化。

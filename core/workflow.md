@@ -5,6 +5,21 @@
 > 规定授权与发布；`profiles/` 规定具体工具（Git / jj）命令；
 > `adapters/` 规定 Harness 映射。各层通过链接引用，不复制同一规则。
 
+## 0. 治理所有权预检
+
+- TheMasterplan 只在自己是当前任务**唯一交付治理工作流**时进入 `ACTIVE`。
+- 编辑器、Shell、Git/jj、直接使用的 OpenCode/Codex/ChatGPT 等执行 Harness
+  本身不构成冲突；判断依据是“谁拥有任务生命周期”，不是工具品牌。
+- 如果当前调用上下文或项目事实明确表明外部交付工作流（另一个系统）已经
+  管理 worker/session、task workspace/worktree/branch、Issue→PR 状态机、
+  CI/review 路由，或 merge/release/deploy 工作流，则本任务状态为
+  `ABSTAINED`。
+- `ABSTAINED` 是任务级瞬时状态，不写入 `.aw/state.json`，不修改项目文件；
+  TheMasterplan 不继续加载 Profile/专用工作流映射，不运行更新检测/升级，
+  也不施加自己的 PR、reaction、cleanup 或发布生命周期。
+- 所有权不明确时，在任何写操作前询问人类；不得按品牌、目录名或版本号猜测，
+  也不得为了兼容外部编排器增加持续维护的特例。
+
 ## 1. 任务来源与范围
 
 - 产品定位：**单一交付责任人的 AI 辅助代码交付治理协议**。允许研究、

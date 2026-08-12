@@ -87,9 +87,9 @@ class ReleaseIdentityTests(unittest.TestCase):
 
 
 class DistributionContractTests(unittest.TestCase):
-    def test_manifest_is_v311_and_contains_executor_bridge(self) -> None:
+    def test_manifest_is_current_and_contains_executor_bridge(self) -> None:
         manifest = load_manifest(ROOT / "distribution/manifest.json")
-        self.assertEqual(manifest["distribution_version"], "v3.1.1")
+        self.assertEqual(manifest["distribution_version"], "v3.2.0")
 
         bridges = [
             entry

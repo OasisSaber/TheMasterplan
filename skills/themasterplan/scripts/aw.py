@@ -180,11 +180,7 @@ def build_parser() -> argparse.ArgumentParser:
     plan_adopt_parser.add_argument(
         "--adapter",
         required=True,
-        choices=[
-            "generic",
-            "trellis",
-            "agent-orchestrator",
-        ],
+        choices=["generic"],
     )
     plan_adopt_parser.add_argument("--validation-path", required=True)
     plan_adopt_parser.add_argument("--default-branch", default="main")

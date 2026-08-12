@@ -6,11 +6,17 @@
 
 > 本文件是本仓库唯一入口：定义加载顺序与分域权威，不复制规则正文。
 > 规则分布：
-> - 任务来源、工作区检查、验证真实性、diff 审阅、自审与交接：`core/workflow.md`
-> - 权限与聚合授权、外部写操作边界、人类审批门、发布事务、安全停止条件：`core/policy.md`
-> - Git / jj 发布执行命令：`profiles/`
-> - Harness 映射：`adapters/`
+> - 治理所有权预检、任务、验证与交接：`core/workflow.md`
+> - 权限与发布：`core/policy.md`
+> - Git / jj 执行命令：`profiles/`
+> - 普通 Harness 薄边界：`adapters/generic.md`
 > 各层通过链接引用，不复制同一规则。
+
+## 治理所有权预检
+
+读取 Core 后先判断是否已有外部交付工作流拥有当前任务生命周期。若是，报告
+`TheMasterplan: ABSTAINED — external delivery workflow owns this task.` 并停止
+TheMasterplan；不运行更新检测，不修改外部工作流状态。
 
 ## 权威顺序
 
@@ -25,9 +31,9 @@
 ## 加载顺序
 
 1. 根部 `AGENTS.md`（本文件）；
-2. `core/workflow.md`（任务、验证、自审）；
-3. `core/policy.md`（授权与发布）；
-4. 选用的 `profiles/` 与 `adapters/`；
+2. `core/workflow.md`（先执行 §0 治理所有权预检）；
+3. `core/policy.md`；
+4. `ACTIVE` 时加载选用的 `profiles/` 与 `adapters/generic.md`；
 5. 当前 Issue 或明确人类授权。
 <!-- AW:END MANAGED -->
 
