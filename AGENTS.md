@@ -5,14 +5,14 @@
 > - 任务来源、工作区检查、验证真实性、diff 审阅、自审与交接：[core/workflow.md](core/workflow.md)
 > - 权限与聚合授权、外部写操作边界、人类审批门、发布事务、安全停止条件：[core/policy.md](core/policy.md)
 > - Git / jj 发布执行命令：[profiles/git.md](profiles/git.md)、[profiles/jj.md](profiles/jj.md)
-> - Harness 映射：[adapters/generic.md](adapters/generic.md)、[adapters/trellis.md](adapters/trellis.md)、[adapters/agent-orchestrator.md](adapters/agent-orchestrator.md)
+> - Harness 边界：[adapters/generic.md](adapters/generic.md)；外部交付工作流介入时按 [docs/external-workflow-abstention.md](docs/external-workflow-abstention.md) 主动退让
 > 各层通过链接引用，不复制同一规则。README、CONTRIBUTING、采用指南和其他
 > 材料只能解释或辅助执行，不能覆盖本文件及其引用的规则。
 
 ## 项目事实
 
 - 项目名：TheMasterplan
-- 项目目标：维护面向个人开发者的“单一交付责任人的 AI 辅助代码交付治理协议”（任务生命周期 + 发布治理），并集中维护、版本化发布 GitHub Actions 可重用工作流接口
+- 项目目标：维护面向个人开发者的“单一交付责任人的 AI 辅助代码交付治理协议”（任务生命周期 + 发布治理），并集中维护、版本化发布 GitHub Actions 可重用工作流接口；不承担外部 orchestrator 适配职责，治理所有权冲突时主动 `ABSTAINED`
 - 中央 Actions 接口：`OasisSaber/TheMasterplan/.github/workflows/aw-check.yml`，业务仓库通过 `uses ... @v1` 调用，调用约束见 [docs/actions-interface.md](docs/actions-interface.md)，版本通道见 [docs/release-channels.md](docs/release-channels.md)
 - 接口承诺：`v1` 生命周期内不得移动工作流路径、删除或重命名输入、更改默认项目验证入口、更改 required check 公共名称、新增 Secret 或写权限；中央接口变更视为公共 API 变更，破坏性调整只允许在下一主版本进行
 - 默认分支：`main`
@@ -47,9 +47,11 @@
 1. 根部 `AGENTS.md`（本文件）；
 2. [core/workflow.md](core/workflow.md)（任务来源、工作区、验证、自审）；
 3. [core/policy.md](core/policy.md)（授权与发布）；
-4. 项目采用的 [profiles/](profiles/git.md)（Git / jj 命令）与
-   [adapters/](adapters/generic.md)（Harness 映射）；
-5. 当前 Issue 或明确人类授权。
+4. 执行 [core/workflow.md](core/workflow.md) §0 治理所有权预检；若为
+   `ABSTAINED`，报告后停止 TheMasterplan 工作流；
+5. `ACTIVE` 时再加载项目采用的 [profiles/](profiles/git.md)（Git / jj 命令）
+   与 [adapters/generic.md](adapters/generic.md)（薄 Harness 边界）；
+6. 当前 Issue 或明确人类授权。
 
 ## 任务路径
 

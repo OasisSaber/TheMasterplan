@@ -49,7 +49,7 @@ MANIFEST_VERSION = load_manifest(
 STATE_JSON = {
     "schema_version": 1,
     "source": {"repository": "OasisSaber/TheMasterplan", "version": MANIFEST_VERSION, "commit": "a" * 40},
-    "selection": {"profile": "jj", "adapter": "trellis", "validation_path": "scripts/check.sh", "default_branch": "main"},
+    "selection": {"profile": "jj", "adapter": "generic", "validation_path": "scripts/check.sh", "default_branch": "main"},
     "managed_files": {},
     "adoption": {"date": "2026-08-02", "platform": "linux", "git_version": "2.40", "jj_version": "0.43", "status": "PARTIAL"},
 }
@@ -219,7 +219,7 @@ class InspectTest(unittest.TestCase):
         (self.root / ".trellis").mkdir()
         result = inspect(self.root)
         self.assertEqual(result["detected_profile"], "jj")
-        self.assertEqual(result["detected_adapter"], "trellis")
+        self.assertEqual(result["detected_adapter"], "generic")
 
 
 class AdoptFlowTest(_SourceMixin, unittest.TestCase):
@@ -326,13 +326,12 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
             "existing validation entrypoint must not be overwritten",
         )
 
-    def test_jj_trellis_selection(self) -> None:
-        plan = self._plan(profile="jj", adapter="trellis")
+    def test_jj_generic_selection(self) -> None:
+        plan = self._plan(profile="jj", adapter="generic")
         dests = [op["destination"] for op in plan["files"]]
         self.assertIn("profiles/jj.md", dests)
-        self.assertIn("adapters/trellis.md", dests)
+        self.assertIn("adapters/generic.md", dests)
         self.assertNotIn("profiles/git.md", dests)
-        self.assertNotIn("adapters/generic.md", dests)
 
 
     def test_invalid_commit_assertion_fails(self) -> None:
@@ -518,28 +517,28 @@ class CliTest(unittest.TestCase):
 
 
 class PlanAdoptParserTest(unittest.TestCase):
-    """plan-adopt CLI must accept every adapter declared in the manifest."""
+    """plan-adopt CLI exposes only the lightweight generic adapter."""
 
-    def test_plan_adopt_accepts_agent_orchestrator_adapter(self):
+    def test_plan_adopt_accepts_only_generic_adapter(self):
         parser = build_parser()
+        common = [
+            "plan-adopt",
+            "--source",
+            ".",
+            "--profile",
+            "git",
+            "--validation-path",
+            "scripts/check.sh",
+            "--output",
+            "plan.json",
+        ]
 
-        args = parser.parse_args(
-            [
-                "plan-adopt",
-                "--source",
-                ".",
-                "--profile",
-                "git",
-                "--adapter",
-                "agent-orchestrator",
-                "--validation-path",
-                "scripts/check.sh",
-                "--output",
-                "plan.json",
-            ]
-        )
+        args = parser.parse_args(common + ["--adapter", "generic"])
+        self.assertEqual(args.adapter, "generic")
 
-        self.assertEqual(args.adapter, "agent-orchestrator")
+        for retired in ("trellis", "agent-orchestrator"):
+            with self.assertRaises(SystemExit):
+                parser.parse_args(common + ["--adapter", retired])
 
 
 if __name__ == "__main__":

@@ -136,9 +136,11 @@ def detect_profile(project_root: Path) -> str:
 
 
 def detect_adapter(project_root: Path) -> str:
-    """Detect the harness adapter: trellis when .trellis exists, else generic."""
-    if (project_root / ".trellis").exists():
-        return "trellis"
+    """Return the only supported thin Harness adapter.
+
+    External delivery workflows are handled by the Skill-level abstention
+    preflight, not by brand-specific adapter detection.
+    """
     return "generic"
 
 

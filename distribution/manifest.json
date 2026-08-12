@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "distribution_version": "v3.1.1",
+  "distribution_version": "v3.2.0",
   "source_repository": "OasisSaber/TheMasterplan",
   "required": [
     "core/workflow.md",
@@ -12,9 +12,7 @@
       "jj"
     ],
     "adapters": [
-      "generic",
-      "trellis",
-      "agent-orchestrator"
+      "generic"
     ]
   },
   "files": [
@@ -45,18 +43,6 @@
     {
       "source": "adapters/generic.md",
       "destination": "adapters/generic.md",
-      "ownership": "managed-replace",
-      "required": false
-    },
-    {
-      "source": "adapters/trellis.md",
-      "destination": "adapters/trellis.md",
-      "ownership": "managed-replace",
-      "required": false
-    },
-    {
-      "source": "adapters/agent-orchestrator.md",
-      "destination": "adapters/agent-orchestrator.md",
       "ownership": "managed-replace",
       "required": false
     },

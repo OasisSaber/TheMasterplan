@@ -468,25 +468,26 @@ class UpdateCheckContractTests(unittest.TestCase):
                 f"{path} must reference the update detection step",
             )
 
-    def test_plan_adopt_accepts_agent_orchestrator(self) -> None:
+    def test_plan_adopt_accepts_only_generic_adapter(self) -> None:
         from aw import build_parser
 
-        args = build_parser().parse_args(
-            [
-                "plan-adopt",
-                "--source",
-                ".",
-                "--profile",
-                "git",
-                "--adapter",
-                "agent-orchestrator",
-                "--validation-path",
-                "scripts/check.sh",
-                "--output",
-                "plan.json",
-            ]
-        )
-        self.assertEqual(args.adapter, "agent-orchestrator")
+        common = [
+            "plan-adopt",
+            "--source",
+            ".",
+            "--profile",
+            "git",
+            "--validation-path",
+            "scripts/check.sh",
+            "--output",
+            "plan.json",
+        ]
+        args = build_parser().parse_args(common + ["--adapter", "generic"])
+        self.assertEqual(args.adapter, "generic")
+
+        for retired in ("trellis", "agent-orchestrator"):
+            with self.assertRaises(SystemExit):
+                build_parser().parse_args(common + ["--adapter", retired])
 
     def test_actions_uses_and_policy_ref_update_together(self) -> None:
         body = (ROOT / "docs/client-update-flow.md").read_text(

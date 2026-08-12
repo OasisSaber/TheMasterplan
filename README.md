@@ -1,6 +1,6 @@
 # TheMasterplan
 
-A minimal single-Agent workflow for GitHub and Jujutsu.
+A minimal AI-assisted workflow with a single delivery owner for GitHub and Jujutsu.
 
 TheMasterplan 是面向个人开发者的“单一交付责任人的 AI 辅助代码交付治理协议”（GitHub Flow + Jujutsu 适配），并提供集中维护、版本化发布的 GitHub Actions 可重用工作流接口。
 
@@ -14,7 +14,7 @@ TheMasterplan 是面向个人开发者的“单一交付责任人的 AI 辅助�
 | 人类入口 | [README.md](README.md) |
 | 维护入口 | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | 采用指南 | [docs/adoption-guide.md](docs/adoption-guide.md) |
-| Agent Orchestrator 集成 | [docs/agent-orchestrator-integration.md](docs/agent-orchestrator-integration.md) |
+| 外部工作流共存边界 | [docs/external-workflow-abstention.md](docs/external-workflow-abstention.md) |
 | 更新检测与升级流程 | [docs/client-update-flow.md](docs/client-update-flow.md) |
 | 完整任务生命周期 | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | 验证入口 | `bash scripts/check.sh` |
@@ -28,13 +28,11 @@ TheMasterplan 是面向个人开发者的“单一交付责任人的 AI 辅助�
 - `VERIFIED`：Ubuntu GitHub Actions 中的 Bash 权威入口，以及 PowerShell 7 委托同一 Bash 入口的路径。
 - `PARTIAL`：macOS Bash 与真实 Windows PowerShell 7 + Git for Windows 环境；仓库提供入口和采用烟雾测试，但当前 CI 不在这些原生平台运行。
 
-Agent Orchestrator 支持矩阵（v3.1.0 发布候选）：
-
-- `PARTIAL`：Agent Orchestrator + OpenCode + Git worktree（代码与静态契约完成，等待独立低风险仓库真实 smoke）
-- `PARTIAL`：Agent Orchestrator + OpenCode + Jujutsu colocated workspace
-- `PARTIAL`：未完成真实 smoke 的 Windows/macOS 原生环境
-
-真实 smoke 通过并记录证据前不得使用带星号的 VERIFIED 或脚注式 VERIFIED；完成后再把对应路径更新为 `VERIFIED`。集成说明见 [docs/agent-orchestrator-integration.md](docs/agent-orchestrator-integration.md)。
+外部交付工作流共存采用**主动退让**而不是持续适配：普通 OpenCode/Codex 等
+执行 Harness 可以直接使用 TheMasterplan；一旦另一个系统已经拥有当前任务的
+worker/session、workspace、PR/CI-review 或发布生命周期，本任务状态为
+`ABSTAINED`，TheMasterplan 不再施加自己的任务工作流，也不维护该系统的专用
+Adapter。边界见 [docs/external-workflow-abstention.md](docs/external-workflow-abstention.md)。
 - Jujutsu：本文档命令已使用 `0.43.0` 核对；更高版本不是自动验证范围，采用时必须重新运行烟雾测试。
 - Git：文档假设 `2.34.0` 或更高版本。
 - 示例默认远端为 `origin`、受保护分支为 `main`。
