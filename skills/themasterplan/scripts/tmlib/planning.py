@@ -12,14 +12,14 @@ from pathlib import Path
 
 from .manifest import ManifestError, select_files
 from .source import DEFAULT_REPOSITORY, Source, package_manifest
-from .util import AwError, safe_join, sha256_of_block, sha256_of_file
+from .util import TheMasterplanError, safe_join, sha256_of_block, sha256_of_file
 
 MANAGED_BLOCK_TEMPLATE = "distribution/templates/agents-managed-block.md"
 CONSUMER_WORKFLOW_TEMPLATE = "distribution/templates/consumer-workflow.yml"
 PROJECT_CHECK_TEMPLATE = "distribution/templates/project-check-placeholder.sh"
 
 
-class PlanningError(AwError):
+class PlanningError(TheMasterplanError):
     """Raised when a plan cannot be generated for a clear reason."""
 
 
@@ -34,7 +34,7 @@ def _safe_exists(project_root: Path, relative: str) -> bool:
     """Path-safe existence check; unsafe paths count as not existing."""
     try:
         return safe_join(project_root, relative).is_file()
-    except AwError:
+    except TheMasterplanError:
         return False
 
 
@@ -43,7 +43,7 @@ def _observed_hash(project_root: Path, destination: str, ownership: str) -> str 
     managed-block, whole-file hash otherwise). None when not readable."""
     try:
         target = safe_join(project_root, destination)
-    except AwError:
+    except TheMasterplanError:
         return None
     if not target.is_file():
         return None
@@ -56,7 +56,7 @@ def _classify_existing(project_root: Path, destination: str, package_root: Path,
     """Classify an existing destination: UNCHANGED / CONFLICT / LOCAL_ONLY."""
     try:
         target = safe_join(project_root, destination)
-    except AwError:
+    except TheMasterplanError:
         return "CONFLICT"
     if not target.is_file():
         return "ADD"
@@ -74,7 +74,7 @@ def _classify_existing(project_root: Path, destination: str, package_root: Path,
 
 def _has_block_markers(path: Path) -> bool:
     text = path.read_text(encoding="utf-8", errors="replace")
-    return "<!-- AW:BEGIN MANAGED -->" in text and "<!-- AW:END MANAGED -->" in text
+    return "<!-- THEMASTERPLAN:BEGIN MANAGED -->" in text and "<!-- THEMASTERPLAN:END MANAGED -->" in text
 
 
 def plan_adopt(
@@ -199,7 +199,7 @@ def plan_adopt(
         },
         "files": operations + generated,
         "notes": [
-            "AGENTS.md: only the AW managed block is written; project content outside the block is preserved.",
+            "AGENTS.md: only the TheMasterplan managed block is written; project content outside the block is preserved.",
             "Pull request template is not auto-generated in PR A; checked by the Skill layer.",
         ],
         "stop_conditions": stop_conditions,

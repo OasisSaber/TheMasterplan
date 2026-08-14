@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from .util import AwError, SCHEMA_VERSION, read_json, safe_join
+from .util import TheMasterplanError, SCHEMA_VERSION, read_json, safe_join
 
 ALLOWED_OWNERSHIPS = (
     "managed-replace",
@@ -25,7 +25,7 @@ REPOSITORY_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 VERSION_RE = re.compile(r"^v\d+\.\d+\.\d+(?:[-+][A-Za-z0-9_.-]+)?$")
 
 
-class ManifestError(AwError):
+class ManifestError(TheMasterplanError):
     """Raised when a manifest is structurally invalid or unsafe."""
 
 
@@ -83,7 +83,7 @@ def validate_files(files: list) -> None:
         ):
             try:
                 safe_join(Path("."), relative)
-            except AwError as exc:
+            except TheMasterplanError as exc:
                 raise ManifestError(
                     f"manifest {label} {relative!r}: {exc}"
                 ) from exc

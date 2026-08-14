@@ -16,14 +16,14 @@ GitHub Template Repository 只复制仓库文件，不能保证这些服务器�
 
 reusable workflow 在 GitHub UI 中最终显示的名称不能假定为纯 `check`。迁移 required check 时，先在独立消费者 smoke 仓库运行新工作流并记录真实 check-run 名称，然后按以下顺序由人类执行：
 
-真实 check-run 名称：**`aw-check / check`**（已在消费者 smoke 仓库 `OasisSaber/TheMasterplan-consumer-smoke` 经真实运行验证，结论 success；Issue 4/7 汇报见 AW Issue #45）。
+真实 check-run 名称：**`themasterplan-check / check`**（已在消费者 smoke 仓库 `OasisSaber/TheMasterplan-consumer-smoke` 经真实运行验证，结论 success；Issue 4/7 汇报见 TheMasterplan Issue #45）。
 
 迁移记录（已完成，2026-08-02）：
 
 1. ✅ 现有 Ruleset 保留旧 required check，过渡期同时运行旧检查与新检查；
-2. ✅ 将 `aw-check / check` 加入 required checks（规则集 `Protect main`）；
-3. ✅ 创建测试 PR（AW #50），确认新旧检查均满足；
-4. ✅ 移除旧 required check `check`（规则集现仅要求 `aw-check / check`）；
-5. ✅ 删除旧 CI 实现（AW `.github/workflows/check.yml` 中旧 `check` job，PR #51）。
+2. ✅ 将 `themasterplan-check / check` 加入 required checks（规则集 `Protect main`）；
+3. ✅ 创建测试 PR（TheMasterplan #50），确认新旧检查均满足；
+4. ✅ 移除旧 required check `check`（规则集现仅要求 `themasterplan-check / check`）；
+5. ✅ 删除旧 CI 实现（TheMasterplan `.github/workflows/check.yml` 中旧 `check` job，PR #51）。
 
-当前状态：AW 仓库 required check 仅 `aw-check / check`，`check.yml` 仅含相对路径调用的 `aw-check` job。消费方仓库（如 linshe-marketplace-miniapp）如需启用 required check，按自身实测 check-run 名称（调用方 job 名决定）执行上述迁移。
+当前状态：TheMasterplan 仓库 required check 仅 `themasterplan-check / check`，`check.yml` 仅含相对路径调用的 `themasterplan-check` job。消费方仓库（如 linshe-marketplace-miniapp）如需启用 required check，按自身实测 check-run 名称（调用方 job 名决定）执行上述迁移。

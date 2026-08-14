@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   # 相对路径调用当前 PR 内的中央 reusable workflow，
-  # 确保 AW 的 PR 测试当前 PR 中的策略实现而不是远端旧版本。
-  # 真实 check-run 名称：aw-check / check（与消费者 smoke 仓库一致）。
-  aw-check:
-    uses: ./.github/workflows/aw-check.yml
+  # 确保 TheMasterplan 的 PR 测试当前 PR 中的策略实现而不是远端旧版本。
+  # 真实 check-run 名称：themasterplan-check / check（与消费者 smoke 仓库一致）。
+  themasterplan-check:
+    uses: ./.github/workflows/themasterplan-check.yml

@@ -15,7 +15,7 @@ ABSTAINED
 - `ABSTAINED`：已经有另一个系统拥有当前任务的交付生命周期，TheMasterplan
   主动退让，不再施加自己的任务生命周期规则。
 
-`ABSTAINED` 是任务级、瞬时状态，不写入 `.aw/state.json`，也不增加新的状态
+`ABSTAINED` 是任务级、瞬时状态，不写入 `.themasterplan/state.json`，也不增加新的状态
 schema。
 
 ## 什么不构成冲突
@@ -78,7 +78,7 @@ v3.2.0 删除专用的 Agent Orchestrator 与 Trellis Adapter。
 
 使用 `adapter=generic` 的采用项目可以走正常升级。
 
-历史 `.aw/state.json` 若选择：
+历史 `.themasterplan/state.json` 若选择：
 
 ```text
 adapter = trellis

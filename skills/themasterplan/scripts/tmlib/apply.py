@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .source import Source, read_package_file
 from .util import (
-    AwError,
+    TheMasterplanError,
     read_json,
     safe_join,
     sha256_of_block,
@@ -15,29 +15,29 @@ from .util import (
     write_json_atomic,
 )
 
-BLOCK_BEGIN = "<!-- AW:BEGIN MANAGED -->"
-BLOCK_END = "<!-- AW:END MANAGED -->"
+BLOCK_BEGIN = "<!-- THEMASTERPLAN:BEGIN MANAGED -->"
+BLOCK_END = "<!-- THEMASTERPLAN:END MANAGED -->"
 BLOCK_BEGIN_BYTES = BLOCK_BEGIN.encode("utf-8")
 BLOCK_END_BYTES = BLOCK_END.encode("utf-8")
 SELF_PREFIX = "<self>:"
 
 EXECUTOR_FILES = (
-    "aw.py",
-    "awlib/__init__.py",
-    "awlib/util.py",
-    "awlib/manifest.py",
-    "awlib/source.py",
-    "awlib/inspect.py",
-    "awlib/planning.py",
-    "awlib/apply.py",
-    "awlib/verify.py",
-    "awlib/update.py",
-    "awlib/doctor.py",
-    "awlib/update_check.py",
+    "themasterplan.py",
+    "tmlib/__init__.py",
+    "tmlib/util.py",
+    "tmlib/manifest.py",
+    "tmlib/source.py",
+    "tmlib/inspect.py",
+    "tmlib/planning.py",
+    "tmlib/apply.py",
+    "tmlib/verify.py",
+    "tmlib/update.py",
+    "tmlib/doctor.py",
+    "tmlib/update_check.py",
 )
 
 
-class ApplyError(AwError):
+class ApplyError(TheMasterplanError):
     """Raised when a plan cannot be applied safely."""
 
 
@@ -197,7 +197,7 @@ def _make_minimal_agents(block_content: bytes) -> bytes:
     block = block_content.decode("utf-8")
     return (
         "# TheMasterplan\n\n"
-        "> 本文件由 /TheMasterplan 接入生成；规则由 AW 兼容管理区块声明。\n\n"
+        "> 本文件由 /TheMasterplan 接入生成；规则由 TheMasterplan 管理区块声明。\n\n"
         f"{block}\n"
     ).encode("utf-8")
 
@@ -258,7 +258,7 @@ def _executor_root(source: Source | None) -> Path:
         / "scripts",
     )
     for candidate in candidates:
-        if (candidate / "aw.py").is_file():
+        if (candidate / "themasterplan.py").is_file():
             return candidate
     raise ApplyError(
         "source package does not contain the TheMasterplan executor"
@@ -284,7 +284,7 @@ def install_executor(
 ) -> tuple[list[str], list[str]]:
     """Install the executor from the target source, never from the old copy."""
     bundle = prepared or prepare_executor_bundle(source)
-    bin_root = safe_join(project_root, ".aw/bin")
+    bin_root = safe_join(project_root, ".themasterplan/bin")
     changed = False
     for relative, content in bundle.items():
         target = safe_join(bin_root, relative)
@@ -293,7 +293,7 @@ def install_executor(
         write_bytes_atomic(target, content)
         changed = True
 
-    summary_path = ".aw/bin/aw.py"
+    summary_path = ".themasterplan/bin/themasterplan.py"
     if changed:
         written.append(summary_path)
     else:
@@ -373,13 +373,13 @@ def _check_precondition(
 
 def _executor_state(project_root: Path) -> dict[str, dict]:
     managed: dict[str, dict] = {}
-    bin_root = safe_join(project_root, ".aw/bin")
+    bin_root = safe_join(project_root, ".themasterplan/bin")
     for relative in EXECUTOR_FILES:
         target = safe_join(bin_root, relative)
         if not target.is_file():
             continue
         digest = sha256_of_file(target)
-        destination = f".aw/bin/{relative}"
+        destination = f".themasterplan/bin/{relative}"
         managed[destination] = {
             "source": f"<executor>:{relative}",
             "source_sha256": digest,
@@ -490,7 +490,7 @@ def apply_adopt(
         prepared=prepared_executor,
     )
     write_json_atomic(
-        project_root / ".aw/state.json",
+        project_root / ".themasterplan/state.json",
         _build_state(project_root, plan),
     )
     return {"written": written, "unchanged": unchanged}

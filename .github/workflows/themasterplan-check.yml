@@ -19,7 +19,7 @@ permissions:
   contents: read # Required only for checkout; PR data comes from the event payload.
 
 concurrency:
-  group: aw-check-${{ github.repository }}-${{ github.event.pull_request.number || github.ref }}
+  group: themasterplan-check-${{ github.repository }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:

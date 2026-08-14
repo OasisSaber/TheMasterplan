@@ -18,21 +18,21 @@ ROOT = Path(__file__).resolve().parent.parent
 EXECUTOR_DIR = ROOT / "skills" / "themasterplan" / "scripts"
 sys.path.insert(0, str(EXECUTOR_DIR))
 
-from awlib.apply import EXECUTOR_FILES, apply_adopt  # noqa: E402
-from awlib.manifest import load_manifest  # noqa: E402
-from awlib.planning import plan_adopt  # noqa: E402
-from awlib.source import resolve_local  # noqa: E402
-from awlib.update import apply_update, plan_update  # noqa: E402
-from awlib.update_check import ReleaseIdentity, check_update  # noqa: E402
-from awlib.util import read_json, write_json_atomic  # noqa: E402
-from awlib.verify import verify  # noqa: E402
+from tmlib.apply import EXECUTOR_FILES, apply_adopt  # noqa: E402
+from tmlib.manifest import load_manifest  # noqa: E402
+from tmlib.planning import plan_adopt  # noqa: E402
+from tmlib.source import resolve_local  # noqa: E402
+from tmlib.update import apply_update, plan_update  # noqa: E402
+from tmlib.update_check import ReleaseIdentity, check_update  # noqa: E402
+from tmlib.util import read_json, write_json_atomic  # noqa: E402
+from tmlib.verify import verify  # noqa: E402
 
 TEST_COMMIT = "a" * 40
 OLD_COMMIT = "c" * 40
 OTHER_COMMIT = "b" * 40
 REPOSITORY = "OasisSaber/TheMasterplan"
-BRIDGE_DESTINATION = ".aw/bin/awlib/update_check.py"
-BRIDGE_SOURCE = "skills/themasterplan/scripts/awlib/update_check.py"
+BRIDGE_DESTINATION = ".themasterplan/bin/tmlib/update_check.py"
+BRIDGE_SOURCE = "skills/themasterplan/scripts/tmlib/update_check.py"
 
 
 class ReleaseIdentityTests(unittest.TestCase):
@@ -54,9 +54,9 @@ class ReleaseIdentityTests(unittest.TestCase):
     def test_same_version_different_commit_is_unknown(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
-            (project / ".aw/cache").mkdir(parents=True)
+            (project / ".themasterplan/cache").mkdir(parents=True)
             write_json_atomic(
-                project / ".aw/state.json",
+                project / ".themasterplan/state.json",
                 {
                     "schema_version": 1,
                     "source": {
@@ -67,7 +67,7 @@ class ReleaseIdentityTests(unittest.TestCase):
                 },
             )
             write_json_atomic(
-                project / ".aw/cache/update-check.json",
+                project / ".themasterplan/cache/update-check.json",
                 {
                     "checked_at": time.time(),
                     "repository": REPOSITORY,
@@ -102,7 +102,7 @@ class DistributionContractTests(unittest.TestCase):
         self.assertTrue(bridges[0]["required"])
 
     def test_executor_bundle_contains_update_check(self) -> None:
-        self.assertIn("awlib/update_check.py", EXECUTOR_FILES)
+        self.assertIn("tmlib/update_check.py", EXECUTOR_FILES)
 
 
 class InstalledExecutorTests(unittest.TestCase):
@@ -128,12 +128,12 @@ class InstalledExecutorTests(unittest.TestCase):
             validation_path="scripts/check.sh",
         )
         self.assertFalse(plan["stop_conditions"], plan["stop_conditions"])
-        plan_path = self.project / ".aw-adopt-plan.json"
+        plan_path = self.project / ".themasterplan-adopt-plan.json"
         write_json_atomic(plan_path, plan)
         apply_adopt(self.project, plan_path, self.source)
 
     def _assert_installed_executor_starts(self) -> None:
-        installed = self.project / ".aw/bin/aw.py"
+        installed = self.project / ".themasterplan/bin/themasterplan.py"
         module = self.project / BRIDGE_DESTINATION
         self.assertTrue(installed.is_file())
         self.assertTrue(module.is_file())
@@ -161,7 +161,7 @@ class InstalledExecutorTests(unittest.TestCase):
         bridge = self.project / BRIDGE_DESTINATION
         bridge.unlink()
 
-        state_path = self.project / ".aw/state.json"
+        state_path = self.project / ".themasterplan/state.json"
         state = read_json(state_path)
         state["source"] = {
             "repository": REPOSITORY,
@@ -181,7 +181,7 @@ class InstalledExecutorTests(unittest.TestCase):
         self.assertEqual(bridge_operation["source"], BRIDGE_SOURCE)
         self.assertFalse(plan["stop_conditions"], plan["stop_conditions"])
 
-        plan_path = self.project / ".aw-update-plan.json"
+        plan_path = self.project / ".themasterplan-update-plan.json"
         write_json_atomic(plan_path, plan)
         apply_update(self.project, plan_path, self.source)
 

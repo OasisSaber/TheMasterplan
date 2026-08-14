@@ -3,7 +3,7 @@ name: themasterplan
 description: >-
   TheMasterplan 单一交付责任人的轻量 AI 辅助代码交付治理协议（GitHub Flow +
   Jujutsu Profile + Generic Harness 边界）。当用户调用 /TheMasterplan，或项目
-  包含根部 AGENTS.md、core/、profiles/、.aw/state.json 等采用特征时使用。
+  包含根部 AGENTS.md、core/、profiles/、.themasterplan/state.json 等采用特征时使用。
 ---
 
 # TheMasterplan 工作流
@@ -20,7 +20,7 @@ core/policy.md + core/workflow.md
 治理所有权预检
 profiles/<profile>.md（仅 ACTIVE）
 adapters/generic.md（可选，仅 ACTIVE）
-.aw/state.json（采用状态，可选，仅 ACTIVE）
+.themasterplan/state.json（采用状态，可选，仅 ACTIVE）
 ```
 
 采用项目自身文件的规则优先于本 Skill 的一般说明。
@@ -46,7 +46,7 @@ merge/release/deploy 工作流，则：
 TheMasterplan: ABSTAINED — external delivery workflow owns this task.
 ```
 
-随后停止。`ABSTAINED` 不写入 `.aw/state.json`，不运行更新检测或升级，不加载
+随后停止。`ABSTAINED` 不写入 `.themasterplan/state.json`，不运行更新检测或升级，不加载
 外部工作流 Adapter，也不修改外部系统状态。
 
 所有权不明确时，在任何写操作前询问人类；不得按品牌猜测。
@@ -55,11 +55,11 @@ TheMasterplan: ABSTAINED — external delivery workflow owns this task.
 
 以下内部实现继续保留：
 
-- `.aw/`
-- `.aw/bin/aw.py`
-- `<!-- AW:BEGIN MANAGED -->`
-- `<!-- AW:END MANAGED -->`
-- Python 内部 `AwError` 等符号
+- `.themasterplan/`
+- `.themasterplan/bin/themasterplan.py`
+- `<!-- THEMASTERPLAN:BEGIN MANAGED -->`
+- `<!-- THEMASTERPLAN:END MANAGED -->`
+- Python 内部 `TheMasterplanError` 等符号
 
 这些是存储和代码兼容接口，不是用户调用命令。
 
@@ -73,7 +73,7 @@ TheMasterplan: ABSTAINED — external delivery workflow owns this task.
 创建或更新 Pull Request 前，优先读取并使用项目的
 `.github/pull_request_template.md`。
 
-若项目调用 TheMasterplan 中央 `aw-check`，PR 正文至少必须包含真实 Issue
+若项目调用 TheMasterplan 中央 `themasterplan-check`，PR 正文至少必须包含真实 Issue
 引用，或真实的明确人类授权来源、Goal、Scope；无 Issue 时不得伪造编号。
 
 并包含非空：
@@ -101,10 +101,10 @@ TheMasterplan: ABSTAINED — external delivery workflow owns this task.
 
 确认项目完整安装且治理状态为 `ACTIVE` 后：
 
-1. 若项目存在 `.aw/state.json` 与 `.aw/bin/aw.py`，运行：
+1. 若项目存在 `.themasterplan/state.json` 与 `.themasterplan/bin/themasterplan.py`，运行：
 
    ```bash
-   python .aw/bin/aw.py check-update --root . --json
+   python .themasterplan/bin/themasterplan.py check-update --root . --json
    ```
 
 2. `CURRENT`：简短说明当前已是最新稳定版本，继续任务。

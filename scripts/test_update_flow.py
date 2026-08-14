@@ -24,14 +24,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 EXECUTOR_DIR = REPO_ROOT / "skills" / "themasterplan" / "scripts"
 
 sys.path.insert(0, str(EXECUTOR_DIR))
-from awlib import AwError  # noqa: E402
-from awlib.apply import apply_adopt  # noqa: E402
-from awlib.doctor import doctor  # noqa: E402
-from awlib.manifest import load_manifest  # noqa: E402
-from awlib.planning import plan_adopt  # noqa: E402
-from awlib.source import SourceError, resolve_local, resolve_remote, resolve_source  # noqa: E402
-from awlib.update import apply_update, plan_update  # noqa: E402
-from awlib.util import read_json, write_json_atomic  # noqa: E402
+from tmlib import TheMasterplanError  # noqa: E402
+from tmlib.apply import apply_adopt  # noqa: E402
+from tmlib.doctor import doctor  # noqa: E402
+from tmlib.manifest import load_manifest  # noqa: E402
+from tmlib.planning import plan_adopt  # noqa: E402
+from tmlib.source import SourceError, resolve_local, resolve_remote, resolve_source  # noqa: E402
+from tmlib.update import apply_update, plan_update  # noqa: E402
+from tmlib.util import read_json, write_json_atomic  # noqa: E402
 
 PACKAGE_ROOT = REPO_ROOT
 TEST_COMMIT = "b" * 40
@@ -106,7 +106,7 @@ class HttpServerTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             cache = Path(tmp) / "cache"
             # Patch the archive/tag URLs to the local server.
-            from awlib import source as source_mod
+            from tmlib import source as source_mod
 
             original_archive = source_mod.ARCHIVE_URL
             original_api = source_mod.API_COMMIT_URL
@@ -169,10 +169,10 @@ class UpdateFlowTest(unittest.TestCase):
             adapter="generic",
             validation_path="scripts/check.sh",
         )
-        plan_path = self.root / ".aw-plan.json"
+        plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
         apply_adopt(self.root, plan_path, resolve_local(package_root, commit=TEST_COMMIT))
-        return read_json(self.root / ".aw/state.json")
+        return read_json(self.root / ".themasterplan/state.json")
 
     def test_plan_update_unchanged(self) -> None:
         state = self._adopt(PACKAGE_ROOT)
@@ -191,7 +191,7 @@ class UpdateFlowTest(unittest.TestCase):
         wf = next(op for op in plan["files"] if op["destination"] == "core/workflow.md")
         self.assertEqual(wf["classification"], "UPDATE_SAFE")
         # Apply the safe update.
-        plan_path = self.root / ".aw-plan.json"
+        plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
         result = apply_update(self.root, plan_path, resolve_local(pkg2, commit="c" * 40))
         self.assertIn("core/workflow.md", result["written"])
@@ -200,15 +200,15 @@ class UpdateFlowTest(unittest.TestCase):
         )
         # Now locally modify it and plan again -> LOCAL_MODIFIED stops.
         (self.root / "core/workflow.md").write_bytes(b"local edit\n")
-        state2 = read_json(self.root / ".aw/state.json")
+        state2 = read_json(self.root / ".themasterplan/state.json")
         plan2 = plan_update(self.root, resolve_local(pkg2, commit="c" * 40), state2)
         wf2 = next(op for op in plan2["files"] if op["destination"] == "core/workflow.md")
         self.assertEqual(wf2["classification"], "LOCAL_MODIFIED")
         self.assertTrue(plan2["stop_conditions"])
         # Apply must refuse (stop conditions present).
-        plan_path2 = self.root / ".aw-plan2.json"
+        plan_path2 = self.root / ".themasterplan-plan2.json"
         write_json_atomic(plan_path2, plan2)
-        with self.assertRaises(AwError):
+        with self.assertRaises(TheMasterplanError):
             apply_update(self.root, plan_path2, resolve_local(pkg2, commit="c" * 40))
         self.assertEqual(
             (self.root / "core/workflow.md").read_bytes(), b"local edit\n",
@@ -240,7 +240,7 @@ class UpdateFlowTest(unittest.TestCase):
         self.assertIn("REMOVED_UPSTREAM", classes)
         self.assertFalse(plan["stop_conditions"], plan["stop_conditions"])
         # Apply: extra added, adapters/generic.md removed (hash unchanged).
-        plan_path = self.root / ".aw-plan.json"
+        plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
         result = apply_update(self.root, plan_path, resolve_local(pkg2, commit="d" * 40))
         self.assertIn("core/extra.md", result["written"])
@@ -285,7 +285,7 @@ class DoctorTest(unittest.TestCase):
             adapter="generic",
             validation_path="scripts/check.sh",
         )
-        plan_path = self.root / ".aw-plan.json"
+        plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
         apply_adopt(self.root, plan_path, resolve_local(PACKAGE_ROOT, commit=TEST_COMMIT))
         report = doctor(self.root)
@@ -304,7 +304,7 @@ class DoctorTest(unittest.TestCase):
             adapter="generic",
             validation_path="scripts/check.sh",
         )
-        plan_path = self.root / ".aw-plan.json"
+        plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
         apply_adopt(self.root, plan_path, resolve_local(PACKAGE_ROOT, commit=TEST_COMMIT))
         (self.root / "core" / "policy.md").write_bytes(b"tampered\n")

@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-WORKFLOW = ROOT / ".github/workflows/aw-check.yml"
+WORKFLOW = ROOT / ".github/workflows/themasterplan-check.yml"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 
 

@@ -16,9 +16,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # 调用 AW 中央治理检查（TheMasterplan /TheMasterplan 接入生成；项目验证入口见
+  # 调用 TheMasterplan 中央治理检查（TheMasterplan /TheMasterplan 接入生成；项目验证入口见
   # with.project-check-path，由接入时选择的 validation_path 渲染）。
-  aw-check:
-    uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1
+  themasterplan-check:
+    uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v1
     with:
       project-check-path: "{{validation_path}}"

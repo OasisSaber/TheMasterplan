@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 EXECUTOR_DIR = ROOT / "skills" / "themasterplan" / "scripts"
 
 sys.path.insert(0, str(EXECUTOR_DIR))
-from awlib.update_check import (  # noqa: E402
+from tmlib.update_check import (  # noqa: E402
     UpdateCheckError,
     check_update,
     fetch_latest_stable_release,
@@ -124,8 +124,8 @@ class UpdateCheckHttpTests(unittest.TestCase):
         )
 
     def _patch_urls(self) -> None:
-        import awlib.source as source_mod
-        import awlib.update_check as check_mod
+        import tmlib.source as source_mod
+        import tmlib.update_check as check_mod
 
         check_mod.RELEASES_URL = (
             f"http://127.0.0.1:{self.port}/releases.json"
@@ -137,8 +137,8 @@ class UpdateCheckHttpTests(unittest.TestCase):
         self._check_mod = check_mod
 
     def _unpatch_urls(self) -> None:
-        import awlib.source as source_mod
-        import awlib.update_check as check_mod
+        import tmlib.source as source_mod
+        import tmlib.update_check as check_mod
 
         source_mod.API_COMMIT_URL = (
             "https://api.github.com/repos/{repository}/commits/{ref}"
@@ -203,14 +203,14 @@ class UpdateCheckHttpTests(unittest.TestCase):
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
-                (root / ".aw").mkdir(parents=True)
+                (root / ".themasterplan").mkdir(parents=True)
                 state = dict(STATE_JSON)
                 state["source"] = dict(
                     state["source"],
                     version=version,
                     commit=commit,
                 )
-                (root / ".aw/state.json").write_text(
+                (root / ".themasterplan/state.json").write_text(
                     json.dumps(state), encoding="utf-8"
                 )
                 return check_update(root, use_cache=False)
@@ -245,10 +245,10 @@ class UpdateCheckHttpTests(unittest.TestCase):
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
-                (root / ".aw").mkdir(parents=True)
+                (root / ".themasterplan").mkdir(parents=True)
                 state = dict(STATE_JSON)
                 state["source"] = dict(state["source"], version="v3.1.0")
-                state_path = root / ".aw/state.json"
+                state_path = root / ".themasterplan/state.json"
                 state_path.write_text(json.dumps(state), encoding="utf-8")
                 before = state_path.read_bytes()
                 check_update(root, use_cache=False)
@@ -273,8 +273,8 @@ class UpdateCheckHttpTests(unittest.TestCase):
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
-                (root / ".aw").mkdir(parents=True)
-                (root / ".aw/state.json").write_text(
+                (root / ".themasterplan").mkdir(parents=True)
+                (root / ".themasterplan/state.json").write_text(
                     json.dumps(STATE_JSON), encoding="utf-8"
                 )
                 result = check_update(root, use_cache=False)
@@ -299,15 +299,15 @@ class UpdateCheckOfflineTests(unittest.TestCase):
     """No-network and failure-path tests."""
 
     def test_network_failure_is_unavailable(self) -> None:
-        import awlib.update_check as check_mod
+        import tmlib.update_check as check_mod
 
         original = check_mod.RELEASES_URL
         check_mod.RELEASES_URL = "http://127.0.0.1:1/releases.json"
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
-                (root / ".aw").mkdir(parents=True)
-                (root / ".aw/state.json").write_text(
+                (root / ".themasterplan").mkdir(parents=True)
+                (root / ".themasterplan/state.json").write_text(
                     json.dumps(STATE_JSON), encoding="utf-8"
                 )
                 result = check_update(root, use_cache=False)
@@ -319,7 +319,7 @@ class UpdateCheckOfflineTests(unittest.TestCase):
         self.assertFalse(result["writes_performed"])
 
     def test_rate_limit_is_unavailable(self) -> None:
-        import awlib.update_check as check_mod
+        import tmlib.update_check as check_mod
 
         httpd = socketserver.TCPServer(("127.0.0.1", 0), RateLimitHandler)
         port = httpd.server_address[1]
@@ -330,8 +330,8 @@ class UpdateCheckOfflineTests(unittest.TestCase):
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
-                (root / ".aw").mkdir(parents=True)
-                (root / ".aw/state.json").write_text(
+                (root / ".themasterplan").mkdir(parents=True)
+                (root / ".themasterplan/state.json").write_text(
                     json.dumps(STATE_JSON), encoding="utf-8"
                 )
                 result = check_update(root, use_cache=False)
@@ -351,8 +351,8 @@ class UpdateCheckOfflineTests(unittest.TestCase):
     def test_corrupted_state_raises(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / ".aw").mkdir(parents=True)
-            (root / ".aw/state.json").write_text(
+            (root / ".themasterplan").mkdir(parents=True)
+            (root / ".themasterplan/state.json").write_text(
                 "{not json", encoding="utf-8"
             )
             with self.assertRaises(UpdateCheckError):
@@ -361,12 +361,12 @@ class UpdateCheckOfflineTests(unittest.TestCase):
     def test_corrupted_state_exits_nonzero(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / ".aw").mkdir(parents=True)
-            (root / ".aw/state.json").write_text(
+            (root / ".themasterplan").mkdir(parents=True)
+            (root / ".themasterplan/state.json").write_text(
                 "{not json", encoding="utf-8"
             )
             proc = subprocess.run(
-                [sys.executable, str(EXECUTOR_DIR / "aw.py"),
+                [sys.executable, str(EXECUTOR_DIR / "themasterplan.py"),
                  "check-update", "--root", str(root)],
                 capture_output=True,
                 text=True,
@@ -378,16 +378,16 @@ class UpdateCheckStateTests(unittest.TestCase):
     """Status machine and zero-write guarantees."""
 
     def _adopt(self, root: Path, version: str = "v3.1.0") -> Path:
-        (root / ".aw").mkdir(parents=True)
+        (root / ".themasterplan").mkdir(parents=True)
         state = dict(STATE_JSON)
         state["source"] = dict(state["source"], version=version)
-        (root / ".aw/state.json").write_text(
+        (root / ".themasterplan/state.json").write_text(
             json.dumps(state), encoding="utf-8"
         )
-        return root / ".aw/state.json"
+        return root / ".themasterplan/state.json"
 
     def test_check_update_does_not_modify_state(self) -> None:
-        import awlib.update_check as check_mod
+        import tmlib.update_check as check_mod
 
         original = check_mod.RELEASES_URL
         check_mod.RELEASES_URL = "http://127.0.0.1:1/releases.json"
@@ -403,7 +403,7 @@ class UpdateCheckStateTests(unittest.TestCase):
         self.assertEqual(before, after)
 
     def test_check_update_does_not_modify_managed_files(self) -> None:
-        import awlib.update_check as check_mod
+        import tmlib.update_check as check_mod
 
         original = check_mod.RELEASES_URL
         check_mod.RELEASES_URL = "http://127.0.0.1:1/releases.json"
@@ -469,7 +469,7 @@ class UpdateCheckContractTests(unittest.TestCase):
             )
 
     def test_plan_adopt_accepts_only_generic_adapter(self) -> None:
-        from aw import build_parser
+        from themasterplan import build_parser
 
         common = [
             "plan-adopt",
@@ -498,17 +498,17 @@ class UpdateCheckContractTests(unittest.TestCase):
         self.assertIn("同时更新", body)
 
     def test_legacy_compatibility_surface_preserved(self) -> None:
-        awlib_init = (EXECUTOR_DIR / "awlib/__init__.py").read_text(
+        tmlib_init = (EXECUTOR_DIR / "tmlib/__init__.py").read_text(
             encoding="utf-8"
         )
-        self.assertIn("AwError", awlib_init)
-        self.assertTrue((EXECUTOR_DIR / "aw.py").is_file())
-        self.assertTrue((EXECUTOR_DIR / "awlib/util.py").is_file())
+        self.assertIn("TheMasterplanError", tmlib_init)
+        self.assertTrue((EXECUTOR_DIR / "themasterplan.py").is_file())
+        self.assertTrue((EXECUTOR_DIR / "tmlib/util.py").is_file())
         template = (
             ROOT / "distribution/templates/agents-managed-block.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("AW:BEGIN MANAGED", template)
-        workflow = (ROOT / ".github/workflows/aw-check.yml").read_text(
+        self.assertIn("THEMASTERPLAN:BEGIN MANAGED", template)
+        workflow = (ROOT / ".github/workflows/themasterplan-check.yml").read_text(
             encoding="utf-8"
         )
         self.assertIn("policy-ref", workflow)
@@ -520,14 +520,14 @@ class UpdateCheckCacheTests(unittest.TestCase):
     def _root(self) -> Path:
         tmp = tempfile.mkdtemp(prefix="aw-cache-test-")
         root = Path(tmp)
-        (root / ".aw").mkdir(parents=True)
-        (root / ".aw/state.json").write_text(
+        (root / ".themasterplan").mkdir(parents=True)
+        (root / ".themasterplan/state.json").write_text(
             json.dumps(STATE_JSON), encoding="utf-8"
         )
         return root
 
     def test_cache_is_keyed_by_prerelease_flag(self) -> None:
-        import awlib.update_check as check_mod
+        import tmlib.update_check as check_mod
 
         root = self._root()
         latest = {"version": "v3.2.0", "commit": PRE_SHA}
@@ -545,10 +545,10 @@ class UpdateCheckCacheTests(unittest.TestCase):
         self.assertEqual(prerelease_read, latest)
 
     def test_expired_cache_is_ignored(self) -> None:
-        import awlib.update_check as check_mod
+        import tmlib.update_check as check_mod
 
         root = self._root()
-        cache_path = root / ".aw/cache/update-check.json"
+        cache_path = root / ".themasterplan/cache/update-check.json"
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         cache_path.write_text(
             json.dumps(
@@ -567,10 +567,10 @@ class UpdateCheckCacheTests(unittest.TestCase):
         self.assertIsNone(cached)
 
     def test_corrupted_cache_is_ignored(self) -> None:
-        import awlib.update_check as check_mod
+        import tmlib.update_check as check_mod
 
         root = self._root()
-        cache_path = root / ".aw/cache/update-check.json"
+        cache_path = root / ".themasterplan/cache/update-check.json"
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         cache_path.write_text("{not json", encoding="utf-8")
         cached = check_mod._read_cache(
@@ -585,7 +585,7 @@ class UpdateCheckCliTests(unittest.TestCase):
     def test_invalid_repository_exits_2(self) -> None:
         import argparse
 
-        from aw import _cmd_check_update
+        from themasterplan import _cmd_check_update
 
         args = argparse.Namespace(
             root=".", repository="not-a-repo", include_prerelease=False,
@@ -597,7 +597,7 @@ class UpdateCheckCliTests(unittest.TestCase):
         import argparse
         from unittest import mock
 
-        from aw import _cmd_check_update
+        from themasterplan import _cmd_check_update
 
         args = argparse.Namespace(
             root=".", repository=None, include_prerelease=False,
@@ -612,7 +612,7 @@ class UpdateCheckCliTests(unittest.TestCase):
             "recommended_next_step": "continue-current-version",
             "writes_performed": False,
         }
-        with mock.patch("aw.check_update", return_value=result):
+        with mock.patch("themasterplan.check_update", return_value=result):
             self.assertEqual(_cmd_check_update(args), 3)
 
 

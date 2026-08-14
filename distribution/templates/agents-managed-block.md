@@ -1,6 +1,6 @@
-<!-- AW:BEGIN MANAGED -->
+<!-- THEMASTERPLAN:BEGIN MANAGED -->
 <!-- 本区块由 TheMasterplan（/TheMasterplan）管理（managed-block）。
-     区块外内容属于项目，AW 不会覆盖；项目事实请维护在区块外。 -->
+     区块外内容属于项目，TheMasterplan 不会覆盖；项目事实请维护在区块外。 -->
 
 # TheMasterplan
 
@@ -35,9 +35,9 @@ TheMasterplan；不运行更新检测，不修改外部工作流状态。
 3. `core/policy.md`；
 4. `ACTIVE` 时加载选用的 `profiles/` 与 `adapters/generic.md`；
 5. 当前 Issue 或明确人类授权。
-<!-- AW:END MANAGED -->
+<!-- THEMASTERPLAN:END MANAGED -->
 
 ## 项目事实
 
 <!-- 项目专属内容（项目名、目标、技术栈、默认分支、验证入口、受保护分支等）
-     请在区块外维护：AW 的 apply/update 只替换上方管理区块，不触碰本段。 -->
+     请在区块外维护：TheMasterplan 的 apply/update 只替换上方管理区块，不触碰本段。 -->

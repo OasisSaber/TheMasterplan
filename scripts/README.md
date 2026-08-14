@@ -10,7 +10,7 @@
 
 ## 支持状态
 
-- `VERIFIED`：当前 Ubuntu GitHub Actions 中直接运行 `scripts/check.sh`（经中央 reusable workflow `aw-check.yml`，check-run 名称 `aw-check / check`）。
+- `VERIFIED`：当前 Ubuntu GitHub Actions 中直接运行 `scripts/check.sh`（经中央 reusable workflow `themasterplan-check.yml`，check-run 名称 `themasterplan-check / check`）。
 - `PARTIAL`：真实 Windows PowerShell 7 + Git for Windows 与 macOS Bash。仓库提供入口，但当前 CI 不在这些原生平台运行；采用者必须在目标平台完成烟雾测试。
 - Windows PowerShell 5.1 不在支持范围内。
 
@@ -48,7 +48,7 @@ python scripts/validate_consumer.py <repository-root> <project-check-path>
 ## Actions 契约
 
 `scripts/test_actions_contract.py` 机械验证中央 reusable workflow
-`.github/workflows/aw-check.yml`：`workflow_call` 触发、Job 名称为 `check`、
+`.github/workflows/themasterplan-check.yml`：`workflow_call` 触发、Job 名称为 `check`、
 只读权限、无 `pull_request_target` 与 Secrets、第三方 Action 固定完整 SHA、
 默认输入、超时上限与检出路径。契约定义见
 [docs/actions-interface.md](../docs/actions-interface.md)。

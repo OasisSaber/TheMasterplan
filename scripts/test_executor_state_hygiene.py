@@ -13,25 +13,25 @@ ROOT = Path(__file__).resolve().parent.parent
 EXECUTOR_DIR = ROOT / "skills" / "themasterplan" / "scripts"
 sys.path.insert(0, str(EXECUTOR_DIR))
 
-from awlib.apply import apply_adopt  # noqa: E402
-from awlib.doctor import doctor  # noqa: E402
-from awlib.inspect import detect_status  # noqa: E402
-from awlib.planning import plan_adopt  # noqa: E402
-from awlib.source import resolve_local  # noqa: E402
-from awlib.update import apply_update, plan_update  # noqa: E402
-from awlib.util import (  # noqa: E402
+from tmlib.apply import apply_adopt  # noqa: E402
+from tmlib.doctor import doctor  # noqa: E402
+from tmlib.inspect import detect_status  # noqa: E402
+from tmlib.planning import plan_adopt  # noqa: E402
+from tmlib.source import resolve_local  # noqa: E402
+from tmlib.update import apply_update, plan_update  # noqa: E402
+from tmlib.util import (  # noqa: E402
     is_volatile_executor_artifact,
     read_json,
     sha256_of_file,
     write_json_atomic,
 )
-from awlib.verify import verify  # noqa: E402
+from tmlib.verify import verify  # noqa: E402
 
 TEST_COMMIT = "a" * 40
 VOLATILE_DESTINATION = (
-    ".aw/bin/awlib/__pycache__/update.cpython-311.pyc"
+    ".themasterplan/bin/tmlib/__pycache__/update.cpython-311.pyc"
 )
-NONVOLATILE_DESTINATION = ".aw/bin/awlib/unexpected.cache"
+NONVOLATILE_DESTINATION = ".themasterplan/bin/tmlib/unexpected.cache"
 
 
 class ExecutorStateHygieneTests(unittest.TestCase):
@@ -58,30 +58,30 @@ class ExecutorStateHygieneTests(unittest.TestCase):
             validation_path="scripts/check.sh",
         )
         self.assertFalse(plan["stop_conditions"], plan["stop_conditions"])
-        plan_path = self.project / ".aw-adopt-plan.json"
+        plan_path = self.project / ".themasterplan-adopt-plan.json"
         write_json_atomic(plan_path, plan)
         apply_adopt(self.project, plan_path, self.source)
 
     def _state(self) -> dict:
-        return read_json(self.project / ".aw/state.json")
+        return read_json(self.project / ".themasterplan/state.json")
 
     def _write_state(self, state: dict) -> None:
-        write_json_atomic(self.project / ".aw/state.json", state)
+        write_json_atomic(self.project / ".themasterplan/state.json", state)
 
     def test_volatile_executor_artifact_predicate_is_narrow(self) -> None:
         self.assertTrue(
             is_volatile_executor_artifact(
-                ".aw/bin/__pycache__/aw.cpython-311.pyc"
+                ".themasterplan/bin/__pycache__/themasterplan.cpython-311.pyc"
             )
         )
         self.assertTrue(
             is_volatile_executor_artifact(VOLATILE_DESTINATION)
         )
         self.assertTrue(
-            is_volatile_executor_artifact(".aw/bin/awlib/update.pyo")
+            is_volatile_executor_artifact(".themasterplan/bin/tmlib/update.pyo")
         )
         self.assertFalse(
-            is_volatile_executor_artifact(".aw/bin/awlib/update.py")
+            is_volatile_executor_artifact(".themasterplan/bin/tmlib/update.py")
         )
         self.assertFalse(
             is_volatile_executor_artifact("cache/module.pyc")
@@ -93,7 +93,7 @@ class ExecutorStateHygieneTests(unittest.TestCase):
     def test_legacy_bytecode_entries_are_ignored(self) -> None:
         state = self._state()
         state["managed_files"][VOLATILE_DESTINATION] = {
-            "source": "<executor>:awlib/__pycache__/update.cpython-311.pyc",
+            "source": "<executor>:tmlib/__pycache__/update.cpython-311.pyc",
             "source_sha256": "b" * 64,
             "installed_sha256": "b" * 64,
             "ownership": "managed-replace",
@@ -115,7 +115,7 @@ class ExecutorStateHygieneTests(unittest.TestCase):
     def test_nonvolatile_executor_entries_remain_checked(self) -> None:
         state = self._state()
         state["managed_files"][NONVOLATILE_DESTINATION] = {
-            "source": "<executor>:awlib/unexpected.cache",
+            "source": "<executor>:tmlib/unexpected.cache",
             "source_sha256": "c" * 64,
             "installed_sha256": "c" * 64,
             "ownership": "managed-replace",
@@ -145,7 +145,7 @@ class ExecutorStateHygieneTests(unittest.TestCase):
         state = self._state()
         digest = sha256_of_file(bytecode)
         state["managed_files"][VOLATILE_DESTINATION] = {
-            "source": "<executor>:awlib/__pycache__/update.cpython-311.pyc",
+            "source": "<executor>:tmlib/__pycache__/update.cpython-311.pyc",
             "source_sha256": digest,
             "installed_sha256": digest,
             "ownership": "managed-replace",
@@ -154,7 +154,7 @@ class ExecutorStateHygieneTests(unittest.TestCase):
 
         plan = plan_update(self.project, self.source, state)
         self.assertFalse(plan["stop_conditions"], plan["stop_conditions"])
-        plan_path = self.project / ".aw-update-plan.json"
+        plan_path = self.project / ".themasterplan-update-plan.json"
         write_json_atomic(plan_path, plan)
         apply_update(self.project, plan_path, self.source)
 

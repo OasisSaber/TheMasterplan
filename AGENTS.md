@@ -13,7 +13,7 @@
 
 - 项目名：TheMasterplan
 - 项目目标：维护面向个人开发者的“单一交付责任人的 AI 辅助代码交付治理协议”（任务生命周期 + 发布治理），并集中维护、版本化发布 GitHub Actions 可重用工作流接口；不承担外部 orchestrator 适配职责，治理所有权冲突时主动 `ABSTAINED`
-- 中央 Actions 接口：`OasisSaber/TheMasterplan/.github/workflows/aw-check.yml`，业务仓库通过 `uses ... @v1` 调用，调用约束见 [docs/actions-interface.md](docs/actions-interface.md)，版本通道见 [docs/release-channels.md](docs/release-channels.md)
+- 中央 Actions 接口：`OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml`，业务仓库通过 `uses ... @v1` 调用，调用约束见 [docs/actions-interface.md](docs/actions-interface.md)，版本通道见 [docs/release-channels.md](docs/release-channels.md)
 - 接口承诺：`v1` 生命周期内不得移动工作流路径、删除或重命名输入、更改默认项目验证入口、更改 required check 公共名称、新增 Secret 或写权限；中央接口变更视为公共 API 变更，破坏性调整只允许在下一主版本进行
 - 默认分支：`main`
 - 工具基线：Jujutsu `0.43.0` 的文档命令已验证；更高版本必须在采用时重新完成烟雾测试。Git `2.34.0` 或更高版本。

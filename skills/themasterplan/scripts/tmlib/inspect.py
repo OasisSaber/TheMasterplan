@@ -11,7 +11,7 @@ from pathlib import Path
 
 from .manifest import load_manifest
 from .util import (
-    AwError,
+    TheMasterplanError,
     is_volatile_executor_artifact,
     read_json,
     safe_join,
@@ -21,7 +21,7 @@ from .util import (
 
 STATUSES = ("ABSENT", "INCOMPLETE", "CURRENT", "OUTDATED", "MODIFIED", "BROKEN")
 
-STATE_PATH = Path(".aw/state.json")
+STATE_PATH = Path(".themasterplan/state.json")
 CORE_PATHS = (Path("core/policy.md"), Path("core/workflow.md"))
 
 
@@ -32,7 +32,7 @@ def _managed_entries(state: dict) -> dict:
 def _installed_hash_matches(project_root: Path, relative: str, recorded: dict) -> bool:
     try:
         target = safe_join(project_root, relative)
-    except AwError:
+    except TheMasterplanError:
         return False
     if not target.is_file():
         return False
@@ -47,7 +47,7 @@ def _has_core_files(project_root: Path) -> bool:
     for p in CORE_PATHS:
         try:
             target = safe_join(project_root, str(p))
-        except AwError:
+        except TheMasterplanError:
             return False
         if not target.is_file():
             return False
@@ -61,7 +61,7 @@ def _missing_required(project_root: Path, state: dict | None) -> list[str]:
             for p in CORE_PATHS:
                 try:
                     target = safe_join(project_root, str(p))
-                except AwError:
+                except TheMasterplanError:
                     missing.append(str(p))
                     continue
                 if not target.is_file():
@@ -72,7 +72,7 @@ def _missing_required(project_root: Path, state: dict | None) -> list[str]:
             continue
         try:
             target = safe_join(project_root, relative)
-        except AwError:
+        except TheMasterplanError:
             missing.append(relative)
             continue
         if not target.is_file():
@@ -88,7 +88,7 @@ def detect_status(project_root: Path, target_version: str | None = None) -> tupl
     if state_path.is_file():
         try:
             state = read_json(state_path)
-        except AwError as exc:
+        except TheMasterplanError as exc:
             return "BROKEN", [f"state.json unreadable: {exc}"]
 
     if state is None:
