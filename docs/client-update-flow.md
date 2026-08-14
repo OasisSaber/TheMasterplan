@@ -112,13 +112,16 @@ repository）。被本地修改的文件不会被覆盖（`LOCAL_MODIFIED` 停�
 升级不会自动修改业务仓库的 GitHub Actions。采用者需手动同步：
 
 ```yaml
-uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v3.1.1
+uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@<target-version>
 with:
-  policy-ref: v3.1.1
+  policy-ref: <target-version>
 ```
 
+将 `<target-version>` 替换为本次明确选择的稳定 Release tag
+（例如 `v3.2.0`）。
+
 `uses` 引用版本与 `policy-ref` **必须同时更新且一致**；禁止混合版本
-（如 `@v3.1.1` + `policy-ref: v1`）。
+（如 `@v3.2.0` + `policy-ref: v1`）。
 
 ## OpenCode 入口同步与外部工作流退让
 
@@ -161,8 +164,7 @@ TheMasterplan 在任何情况下都不会自动升级：
 
 - 不自动运行 `plan-update`；
 - 不自动运行 `apply-update`；
-- 不自动修改 `uses` / `policy-ref` / `scripts/check.sh` / `.opencode/` /
-  `.opencode/`；
+- 不自动修改 `uses` / `policy-ref` / `scripts/check.sh` / `.opencode/`；
 - 不自动创建升级 PR；
 - 不自动 merge、release 或 deploy。
 
