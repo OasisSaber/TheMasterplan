@@ -1,4 +1,4 @@
-# 客户项目更新检测与升级流程（v3.2.0）
+# 客户项目更新检测与升级流程（v4.0.0）
 
 > 面向采用项目说明 TheMasterplan 的更新检测行为与升级确认门。检测逻辑的
 > 权威实现是 `skills/themasterplan/scripts/tmlib/update_check.py` 与
@@ -118,10 +118,10 @@ with:
 ```
 
 将 `<target-version>` 替换为本次明确选择的稳定 Release tag
-（例如 `v3.2.0`）。
+（例如 `v4.0.0`）。
 
 `uses` 引用版本与 `policy-ref` **必须同时更新且一致**；禁止混合版本
-（如 `@v3.2.0` + `policy-ref: v1`）。
+（如 `@v4.0.0` + `policy-ref: v1`）。
 
 ## OpenCode 入口同步与外部工作流退让
 
