@@ -97,6 +97,8 @@ TheMasterplan: ABSTAINED — external delivery workflow owns this task.
 
 未满足的项目不得虚假勾选，应先修正或如实停止。
 
+创建或更新 Pull Request 后，必须保障 CI 检查全部通过；CI 未通过时修正并重跑，不得把失败状态表述为通过。CI 通过后再通知用户“PR 待你合并”。
+
 ## 更新检测（仅 ACTIVE）
 
 确认项目完整安装且治理状态为 `ACTIVE` 后：
