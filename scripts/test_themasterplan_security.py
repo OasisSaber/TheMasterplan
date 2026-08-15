@@ -17,19 +17,19 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 EXECUTOR_DIR = REPO_ROOT / "skills" / "themasterplan" / "scripts"
 sys.path.insert(0, str(EXECUTOR_DIR))
 
-from awlib.doctor import doctor  # noqa: E402
-from awlib.source import (  # noqa: E402
+from tmlib.doctor import doctor  # noqa: E402
+from tmlib.source import (  # noqa: E402
     SourceError,
     resolve_local,
     resolve_remote,
 )
-from awlib.update import (  # noqa: E402
+from tmlib.update import (  # noqa: E402
     UpdateError,
     _validate_update_plan,
     apply_update,
     plan_update,
 )
-from awlib.util import sha256_of_file, write_json_atomic  # noqa: E402
+from tmlib.util import sha256_of_file, write_json_atomic  # noqa: E402
 
 COMMIT_A = "a" * 40
 COMMIT_B = "b" * 40
@@ -97,10 +97,10 @@ class SourceIdentityTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary:
             with mock.patch(
-                "awlib.source._resolve_tag_commit",
+                "tmlib.source._resolve_tag_commit",
                 return_value=COMMIT_B,
             ), mock.patch(
-                "awlib.source._download_archive",
+                "tmlib.source._download_archive",
                 side_effect=fake_download,
             ):
                 resolved = resolve_remote(
@@ -129,7 +129,7 @@ class SourceIdentityTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary:
             with mock.patch(
-                "awlib.source._download_archive",
+                "tmlib.source._download_archive",
                 return_value=archive,
             ):
                 with self.assertRaises(SourceError):
@@ -201,22 +201,22 @@ class UpdateSafetyTest(unittest.TestCase):
         )
 
     def test_update_installs_executor_from_target_source(self) -> None:
-        target_aw = (
+        target_exec = (
             self.package
             / "skills"
             / "themasterplan"
             / "scripts"
-            / "aw.py"
+            / "themasterplan.py"
         )
-        target_aw.write_text(
-            target_aw.read_text(encoding="utf-8")
+        target_exec.write_text(
+            target_exec.read_text(encoding="utf-8")
             + "\n# target-version-marker\n",
             encoding="utf-8",
         )
 
-        old_aw = self.project / ".aw" / "bin" / "aw.py"
-        old_aw.parent.mkdir(parents=True, exist_ok=True)
-        old_aw.write_text("# old-executor\n", encoding="utf-8")
+        old_exec = self.project / ".themasterplan" / "bin" / "themasterplan.py"
+        old_exec.parent.mkdir(parents=True, exist_ok=True)
+        old_exec.write_text("# old-executor\n", encoding="utf-8")
 
         for relative in ("core/policy.md", "core/workflow.md"):
             target = self.project / relative
@@ -257,19 +257,19 @@ class UpdateSafetyTest(unittest.TestCase):
         write_json_atomic(plan_path, plan)
         apply_update(self.project, plan_path, self.source)
 
-        self.assertEqual(old_aw.read_bytes(), target_aw.read_bytes())
+        self.assertEqual(old_exec.read_bytes(), target_exec.read_bytes())
         state = json.loads(
-            (self.project / ".aw" / "state.json").read_text(encoding="utf-8")
+            (self.project / ".themasterplan" / "state.json").read_text(encoding="utf-8")
         )
-        self.assertIn(".aw/bin/awlib/source.py", state["managed_files"])
+        self.assertIn(".themasterplan/bin/tmlib/source.py", state["managed_files"])
 
-        installed_source = self.project / ".aw" / "bin" / "awlib" / "source.py"
+        installed_source = self.project / ".themasterplan" / "bin" / "tmlib" / "source.py"
         installed_source.write_text("# tampered\n", encoding="utf-8")
         report = doctor(self.project)
         self.assertTrue(
             any(
                 "hash mismatch" in issue
-                and ".aw/bin/awlib/source.py" in issue
+                and ".themasterplan/bin/tmlib/source.py" in issue
                 for issue in report["issues"]
             ),
             report,

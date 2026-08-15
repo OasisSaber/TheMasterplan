@@ -52,8 +52,8 @@ Adapter。边界见 [docs/external-workflow-abstention.md](docs/external-workflo
 最小采用集合为：根部 `AGENTS.md`、`core/`、所需 `profiles/` 与可选
 `adapters/`；[skills/themasterplan](skills/themasterplan/SKILL.md)
 是客户端加载入口，不是完整规则本体——仅复制 Skill 不构成完整采用，必须
-同时采用上述仓库规则文件。Skill 加载后会检测 AW 文件、声明加载顺序与权威
-来源，并在 `AGENTS.md`、`core/` 或所需 Profile 缺失时提示“AW 未完整安装”。
+同时采用上述仓库规则文件。Skill 加载后会检测 TheMasterplan 文件、声明加载顺序与权威
+来源，并在 `AGENTS.md`、`core/` 或所需 Profile 缺失时提示“TheMasterplan 未完整安装”。
 采用者仍须填写项目事实、配置真实验证命令与 GitHub 保护，并按
 [采用指南](docs/adoption-guide.md)完成烟雾测试。发布与授权规则以
 `core/policy.md` 与 `profiles/` 为权威来源（见 [core/policy.md](core/policy.md)）。
@@ -114,7 +114,7 @@ pwsh -NoProfile -File scripts/check.ps1
 
 ## 中央 Actions 接口
 
-业务仓库通过可重用工作流调用中央治理检查，不再复制 AW 的 CI 实现：
+业务仓库通过可重用工作流调用中央治理检查，不再复制 TheMasterplan 的 CI 实现：
 
 ```yaml
 jobs:
@@ -122,12 +122,12 @@ jobs:
     name: check
     permissions:
       contents: read
-    uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1
+    uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v1
     with:
       project-check-path: scripts/check.sh
 ```
 
-AW 负责工作流治理、PR 合规检查、安全基线与调用约束；业务仓库负责自己的
+TheMasterplan 负责工作流治理、PR 合规检查、安全基线与调用约束；业务仓库负责自己的
 依赖安装、lint、typecheck、test、build 等专属验证，并通过项目内
 `scripts/check.sh` 暴露。接口契约见
 [docs/actions-interface.md](docs/actions-interface.md)，版本通道见

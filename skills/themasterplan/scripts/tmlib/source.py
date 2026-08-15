@@ -1,7 +1,7 @@
 """Immutable source resolution for the TheMasterplan executor.
 
 Compatibility:
-- ``.aw`` and ``/TheMasterplan`` remain protocol identifiers during the rename.
+- ``.themasterplan/`` is the adoption state directory; ``/TheMasterplan`` is the protocol entry.
 - Remote archives are always addressed by a full commit SHA. A tag is
   resolved first and is never used as the archive/cache identity.
 """
@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .manifest import FULL_SHA_RE, load_manifest
-from .util import AwError, safe_join
+from .util import TheMasterplanError, safe_join
 
 DEFAULT_REPOSITORY = "OasisSaber/TheMasterplan"
 ARCHIVE_URL = "https://codeload.github.com/{repository}/tar.gz/{commit}"
@@ -38,7 +38,7 @@ MAX_EXTRACTED_BYTES = 256 * 1024 * 1024
 SOURCE_MARKER = ".themasterplan-source.json"
 
 
-class SourceError(AwError):
+class SourceError(TheMasterplanError):
     """Raised when a source cannot be resolved or fails identity checks."""
 
 

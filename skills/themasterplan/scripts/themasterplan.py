@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """TheMasterplan deterministic executor.
 
-``aw.py`` and ``.aw`` remain stable compatibility interfaces during the
-AgenticWonderwall -> TheMasterplan rename.
+``themasterplan.py`` is the canonical executor entry; ``.themasterplan/`` is the
+adoption state directory.
 """
 
 from __future__ import annotations
@@ -12,24 +12,24 @@ import json
 import sys
 from pathlib import Path
 
-from awlib import AwError
-from awlib.apply import apply_adopt
-from awlib.doctor import doctor
-from awlib.inspect import inspect
-from awlib.planning import plan_adopt
-from awlib.source import resolve_source
-from awlib.update import apply_update, plan_update
-from awlib.update_check import (
+from tmlib import TheMasterplanError
+from tmlib.apply import apply_adopt
+from tmlib.doctor import doctor
+from tmlib.inspect import inspect
+from tmlib.planning import plan_adopt
+from tmlib.source import resolve_source
+from tmlib.update import apply_update, plan_update
+from tmlib.update_check import (
     REPOSITORY_RE,
     UpdateCheckError,
     check_update,
 )
-from awlib.util import read_json, write_json_atomic
-from awlib.verify import verify
+from tmlib.util import read_json, write_json_atomic
+from tmlib.verify import verify
 
 
 def _cache_dir(root: Path) -> Path:
-    return root / ".aw/cache"
+    return root / ".themasterplan/cache"
 
 
 def _resolve(args: argparse.Namespace, root: Path):
@@ -83,7 +83,7 @@ def _cmd_apply_adopt(args: argparse.Namespace) -> int:
 def _cmd_plan_update(args: argparse.Namespace) -> int:
     root = Path(args.root)
     source = _resolve(args, root)
-    state = read_json(root / ".aw/state.json")
+    state = read_json(root / ".themasterplan/state.json")
     plan = plan_update(root, source, state)
     write_json_atomic(Path(args.output), plan)
     print(json.dumps(plan, ensure_ascii=False, indent=2))
@@ -159,7 +159,7 @@ def _add_source_args(parser: argparse.ArgumentParser) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="aw.py",
+        prog="themasterplan.py",
         description=__doc__,
     )
     commands = parser.add_subparsers(dest="command", required=True)
@@ -241,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         return args.func(args)
-    except AwError as exc:
+    except TheMasterplanError as exc:
         print(f"themasterplan: error: {exc}", file=sys.stderr)
         return 2
     except KeyboardInterrupt:

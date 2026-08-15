@@ -39,7 +39,7 @@ Do not silently infer missing rules.
 
 Before creating or updating a Pull Request, use
 `.github/pull_request_template.md` when present. For repositories using
-TheMasterplan `aw-check`, the PR body must contain a real Issue reference or
+TheMasterplan `themasterplan-check`, the PR body must contain a real Issue reference or
 explicit human authorization and non-empty sections:
 
 ```markdown

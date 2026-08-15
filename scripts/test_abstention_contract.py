@@ -13,8 +13,8 @@ ROOT = Path(__file__).resolve().parent.parent
 EXECUTOR_DIR = ROOT / "skills" / "themasterplan" / "scripts"
 sys.path.insert(0, str(EXECUTOR_DIR))
 
-from aw import build_parser  # noqa: E402
-from awlib.inspect import detect_adapter  # noqa: E402
+from themasterplan import build_parser  # noqa: E402
+from tmlib.inspect import detect_adapter  # noqa: E402
 
 CORE = ROOT / "core/workflow.md"
 OPENCODE_SKILL = ROOT / ".opencode/skills/themasterplan/SKILL.md"
@@ -39,7 +39,7 @@ class AbstentionBoundaryTests(unittest.TestCase):
         body = CORE.read_text(encoding="utf-8")
         self.assertIn("ABSTAINED", body)
         self.assertIn("外部交付工作流", body)
-        self.assertIn("不写入 `.aw/state.json`", body)
+        self.assertIn("不写入 `.themasterplan/state.json`", body)
         self.assertIn("不得按品牌", body)
 
     def test_direct_harness_is_not_itself_a_conflict(self) -> None:

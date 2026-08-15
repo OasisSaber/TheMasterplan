@@ -42,6 +42,7 @@ TheMasterplan: ABSTAINED — external delivery workflow owns this task.
 | 权威验证入口 | Harness 调用项目验证命令 |
 | 完整 diff 审阅 | Harness 的 diff/read 工具 |
 | Pull Request | GitHub PR 或项目声明的审查对象 |
+| CI 通过门 | PR 关联 CI 全部通过后再通知用户“PR 待你合并” |
 | 人类最终门 | merge / release / destructive action 前的明确决定 |
 
 Harness 只负责执行，不复制 Core 规则正文。

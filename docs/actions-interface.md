@@ -6,7 +6,7 @@ TheMasterplan 提供集中维护、版本化发布的 GitHub Actions 可重用�
 ## 工作流路径
 
 ```yaml
-uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1
+uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v1
 ```
 
 该路径在 `v1` 生命周期内不得移动或重命名。
@@ -18,7 +18,7 @@ uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1
 | 输入 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
 | `project-check-path` | string | `scripts/check.sh` | 调用项目权威验证入口 |
-| `policy-ref` | string | `v1` | AW 策略脚本版本 |
+| `policy-ref` | string | `v1` | TheMasterplan 策略脚本版本 |
 
 不得加入任意 `setup-command`、`check-command`、Shell 表达式、Secret 输入、
 发布或部署参数、自动合并参数或写权限开关。
@@ -43,22 +43,22 @@ uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1
 业务仓库 .github/workflows/check.yml
         │ uses @v1
         ▼
-TheMasterplan .github/workflows/aw-check.yml
+TheMasterplan .github/workflows/themasterplan-check.yml
         │
         ├── 检出调用方仓库
-        ├── 检出 AW 策略实现
-        ├── 验证 AW 采用契约
+        ├── 检出 TheMasterplan 策略实现
+        ├── 验证 TheMasterplan 采用契约
         ├── 验证 Pull Request 正文
         ├── 运行调用方 scripts/check.sh
         └── 输出稳定状态检查
 ```
 
-AW 仓库自身通过相对路径调用当前提交内的 reusable workflow，确保 AW 的 PR
+TheMasterplan 仓库自身通过相对路径调用当前提交内的 reusable workflow，确保 TheMasterplan 的 PR
 测试当前 PR 中的策略实现而不是远端旧版本。
 
 ## 职责边界
 
-AW 决定如何触发、如何验证采用契约、如何检查 PR 合规性、如何限制权限、如何
+TheMasterplan 决定如何触发、如何验证采用契约、如何检查 PR 合规性、如何限制权限、如何
 报告结果以及如何管理中央工作流版本；业务仓库决定安装哪些依赖、运行哪些测试、
 如何构建以及如何执行项目专属安全检查。
 
@@ -126,7 +126,7 @@ merge、release 或 deploy；修改 PR 必填标题；修改自审项文本导�
 
 ## 故障回退
 
-消费者在坏版本出现时临时固定上一正常 Release tag 或完整 SHA，等待 AW 发布
+消费者在坏版本出现时临时固定上一正常 Release tag 或完整 SHA，等待 TheMasterplan 发布
 前向修复；`v1` 兼容线已冻结（2026-08-02），不再快进，修复通过新版本通道
 发布（见 [release-channels.md](release-channels.md)）。不使用 force push 回写
 历史。

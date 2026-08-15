@@ -8,7 +8,7 @@ from pathlib import Path
 from .apply import EXECUTOR_FILES
 from .manifest import FULL_SHA_RE
 from .util import (
-    AwError,
+    TheMasterplanError,
     is_volatile_executor_artifact,
     read_json,
     safe_join,
@@ -27,7 +27,7 @@ def _check_managed(
 ) -> list[str]:
     try:
         target = safe_join(project_root, relative)
-    except AwError as exc:
+    except TheMasterplanError as exc:
         return [f"unsafe path in state: {relative} ({exc})"]
     if not target.is_file():
         return [f"missing managed file: {relative}"]
@@ -54,22 +54,22 @@ def _deduplicate(items: list[str]) -> list[str]:
 def doctor(project_root: Path) -> dict:
     issues: list[str] = []
     suggestions: list[str] = []
-    state_path = project_root / ".aw/state.json"
+    state_path = project_root / ".themasterplan/state.json"
     if not state_path.is_file():
         return {
             "ok": False,
             "status": "ABSENT",
-            "issues": ["missing .aw/state.json (TheMasterplan not adopted)"],
+            "issues": ["missing .themasterplan/state.json (TheMasterplan not adopted)"],
             "suggestions": ["run plan-adopt + apply-adopt"],
         }
     try:
         state = read_json(state_path)
-    except AwError as exc:
+    except TheMasterplanError as exc:
         return {
             "ok": False,
             "status": "BROKEN",
             "issues": [f"state.json unreadable: {exc}"],
-            "suggestions": ["repair or re-adopt .aw/state.json"],
+            "suggestions": ["repair or re-adopt .themasterplan/state.json"],
         }
 
     if state.get("schema_version") != 1:
@@ -103,7 +103,7 @@ def doctor(project_root: Path) -> dict:
     else:
         try:
             validation_target = safe_join(project_root, validation_path)
-        except AwError:
+        except TheMasterplanError:
             issues.append(f"unsafe validation_path: {validation_path}")
         else:
             if not validation_target.is_file():
@@ -143,9 +143,9 @@ def doctor(project_root: Path) -> dict:
                     f"review or revert local changes to {relative}"
                 )
 
-    bin_root = safe_join(project_root, ".aw/bin")
+    bin_root = safe_join(project_root, ".themasterplan/bin")
     for relative in EXECUTOR_FILES:
-        destination = f".aw/bin/{relative}"
+        destination = f".themasterplan/bin/{relative}"
         target = safe_join(bin_root, relative)
         if not target.is_file():
             issues.append(f"missing executor file: {destination}")

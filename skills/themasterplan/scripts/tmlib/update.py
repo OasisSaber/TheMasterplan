@@ -20,7 +20,7 @@ from .apply import (
 from .manifest import ALLOWED_OWNERSHIPS, FULL_SHA_RE, select_files
 from .source import Source, package_manifest
 from .util import (
-    AwError,
+    TheMasterplanError,
     read_json,
     safe_join,
     sha256_of_block,
@@ -42,7 +42,7 @@ HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 REPOSITORY_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 
 
-class UpdateError(AwError):
+class UpdateError(TheMasterplanError):
     """Raised when an update cannot be planned or applied safely."""
 
 
@@ -218,7 +218,7 @@ def plan_update(project_root: Path, source: Source, state: dict) -> dict:
     target_destinations = {op["destination"] for op in operations}
 
     for destination in sorted(state_destinations - target_destinations):
-        if destination.startswith(".aw/bin/"):
+        if destination.startswith(".themasterplan/bin/"):
             continue
         ownership = _recorded_ownership(state, destination)
         recorded = _recorded_hash(state, destination)
@@ -439,7 +439,7 @@ def apply_update(
         prepared=prepared_executor,
     )
     state = _build_updated_state(project_root, plan)
-    write_json_atomic(project_root / ".aw/state.json", state)
+    write_json_atomic(project_root / ".themasterplan/state.json", state)
     return {
         "written": written,
         "unchanged": unchanged,

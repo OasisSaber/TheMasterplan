@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .apply import EXECUTOR_FILES
 from .util import (
-    AwError,
+    TheMasterplanError,
     is_volatile_executor_artifact,
     read_json,
     safe_join,
@@ -20,7 +20,7 @@ CORE_PATHS = ("core/policy.md", "core/workflow.md")
 def _check_hash(project_root: Path, relative: str, recorded: dict) -> list[str]:
     try:
         target = safe_join(project_root, relative)
-    except AwError as exc:
+    except TheMasterplanError as exc:
         return [f"unsafe path in state: {relative} ({exc})"]
     if not target.is_file():
         return [f"missing: {relative}"]
@@ -37,16 +37,16 @@ def _check_hash(project_root: Path, relative: str, recorded: dict) -> list[str]:
 
 def verify(project_root: Path) -> dict:
     issues: list[str] = []
-    state_path = project_root / ".aw/state.json"
+    state_path = project_root / ".themasterplan/state.json"
     if not state_path.is_file():
         return {
             "ok": False,
             "status": "ABSENT",
-            "issues": ["missing .aw/state.json"],
+            "issues": ["missing .themasterplan/state.json"],
         }
     try:
         state = read_json(state_path)
-    except AwError as exc:
+    except TheMasterplanError as exc:
         return {
             "ok": False,
             "status": "BROKEN",
@@ -73,8 +73,8 @@ def verify(project_root: Path) -> dict:
     agents = project_root / "AGENTS.md"
     if agents.is_file():
         text = agents.read_text(encoding="utf-8", errors="replace")
-        begin = text.count("<!-- AW:BEGIN MANAGED -->")
-        end = text.count("<!-- AW:END MANAGED -->")
+        begin = text.count("<!-- THEMASTERPLAN:BEGIN MANAGED -->")
+        end = text.count("<!-- THEMASTERPLAN:END MANAGED -->")
         if begin != 1 or end != 1:
             issues.append(
                 "AGENTS.md managed block markers invalid "
@@ -94,7 +94,7 @@ def verify(project_root: Path) -> dict:
     else:
         try:
             validation_target = safe_join(project_root, validation_path)
-        except AwError:
+        except TheMasterplanError:
             issues.append(f"unsafe validation_path: {validation_path}")
         else:
             if not validation_target.is_file():
@@ -102,9 +102,9 @@ def verify(project_root: Path) -> dict:
                     f"missing validation entrypoint: {validation_path}"
                 )
 
-    bin_root = safe_join(project_root, ".aw/bin")
+    bin_root = safe_join(project_root, ".themasterplan/bin")
     for relative in EXECUTOR_FILES:
-        destination = f".aw/bin/{relative}"
+        destination = f".themasterplan/bin/{relative}"
         if not safe_join(bin_root, relative).is_file():
             issues.append(f"missing executor file: {destination}")
         elif destination not in managed:

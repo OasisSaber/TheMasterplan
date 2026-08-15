@@ -2,7 +2,7 @@
 
 Only the Python standard library is used. This module never writes to
 managed project files; the only writable location is the disposable
-``.aw/cache/update-check.json`` cache.
+``.themasterplan/cache/update-check.json`` cache.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .source import _resolve_tag_commit
-from .util import AwError, read_json, write_json_atomic
+from .util import TheMasterplanError, read_json, write_json_atomic
 
 CACHE_TTL_SECONDS = 6 * 60 * 60
 CACHE_FILE_NAME = "update-check.json"
@@ -29,7 +29,7 @@ RELEASES_URL = (
 USER_AGENT = "themasterplan-update-check"
 
 
-class UpdateCheckError(AwError):
+class UpdateCheckError(TheMasterplanError):
     """Raised when update detection cannot complete; message is user-facing."""
 
 
@@ -71,24 +71,24 @@ def parse_semver(version: str) -> tuple[int, int, int] | None:
 
 
 def read_current_identity(project_root: Path) -> ReleaseIdentity | None:
-    """Read and validate ``.aw/state.json`` without writing files.
+    """Read and validate ``.themasterplan/state.json`` without writing files.
 
     Returns None when the project is not adopted (no state file). Raises
     ``UpdateCheckError`` when the state file exists but is corrupted or
     its source identity is invalid.
     """
-    state_path = project_root / ".aw/state.json"
+    state_path = project_root / ".themasterplan/state.json"
     if not state_path.is_file():
         return None
     try:
         state = read_json(state_path)
-    except (AwError, OSError, ValueError) as exc:
-        raise UpdateCheckError(f"cannot read .aw/state.json: {exc}") from exc
+    except (TheMasterplanError, OSError, ValueError) as exc:
+        raise UpdateCheckError(f"cannot read .themasterplan/state.json: {exc}") from exc
     if not isinstance(state, dict):
-        raise UpdateCheckError(".aw/state.json must be an object")
+        raise UpdateCheckError(".themasterplan/state.json must be an object")
     source = state.get("source")
     if not isinstance(source, dict):
-        raise UpdateCheckError(".aw/state.json is missing source identity")
+        raise UpdateCheckError(".themasterplan/state.json is missing source identity")
     repository = source.get("repository")
     version = source.get("version")
     commit = source.get("commit")
@@ -179,7 +179,7 @@ def fetch_latest_stable_release(
     version = picked["tag_name"]
     try:
         commit = _resolve_tag_commit(repository, version, timeout=timeout)
-    except AwError as exc:
+    except TheMasterplanError as exc:
         raise UpdateCheckError(
             f"cannot resolve tag {version} to a commit SHA"
         ) from exc
@@ -208,7 +208,7 @@ def compare_versions(current: str, latest: str) -> str:
 
 
 def _cache_file(project_root: Path) -> Path:
-    return project_root / ".aw/cache" / CACHE_FILE_NAME
+    return project_root / ".themasterplan/cache" / CACHE_FILE_NAME
 
 
 def _read_cache(
@@ -219,7 +219,7 @@ def _read_cache(
         return None
     try:
         data = read_json(path)
-    except (AwError, ValueError):
+    except (TheMasterplanError, ValueError):
         return None
     if not isinstance(data, dict):
         return None

@@ -1,16 +1,16 @@
-# `.aw` 状态目录与格式
+# `.themasterplan` 状态目录与格式
 
 > 本文档描述 `/TheMasterplan`（TheMasterplan 的简写；实际调用与文件命名一律使用
-> 全称 `TheMasterplan`）接入后在采用项目生成的 `.aw/` 目录结构与
-> `.aw/state.json` 格式。执行器实现见
-> `skills/themasterplan/scripts/`（`aw.py` + `awlib/`）。
+> 全称 `TheMasterplan`）接入后在采用项目生成的 `.themasterplan/` 目录结构与
+> `.themasterplan/state.json` 格式。执行器实现见
+> `skills/themasterplan/scripts/`（`themasterplan.py` + `tmlib/`）。
 
 ## 目录结构
 
 ```text
-.aw/
+.themasterplan/
 ├── state.json   采用事实与更新锁定记录（必须受 Git 跟踪）
-├── bin/         项目内锁定版本的执行器副本（aw.py + awlib/）
+├── bin/         项目内锁定版本的执行器副本（themasterplan.py + tmlib/）
 └── cache/       默认不提交；仅用于临时下载与计划生成（PR B 起使用）
 ```
 
@@ -58,7 +58,7 @@
 - `adoption`：采用日期、平台与工具版本、生产状态（`READY` / `PARTIAL` /
   `BLOCKED`）。
 
-### `.aw/cache/update-check.json`
+### `.themasterplan/cache/update-check.json`
 
 `check-update` 的可删除缓存（v3.1.1 起）：记录最近一次成功查询的
 repository、最新稳定版本与提交 SHA、检查时间；默认 6 小时 TTL，不随 Git
@@ -69,8 +69,8 @@ repository、最新稳定版本与提交 SHA、检查时间；默认 6 小时 TT
 
 | 类型 | 语义 |
 |---|---|
-| `managed-replace` | AW 完全管理；当前 hash 与 `installed_sha256` 一致时可整体替换，否则标记 `MODIFIED` 停止 |
-| `managed-block` | 只替换 `<!-- AW:BEGIN MANAGED -->` 与 `<!-- AW:END MANAGED -->` 之间的区块；区块外内容属于项目 |
+| `managed-replace` | TheMasterplan 完全管理；当前 hash 与 `installed_sha256` 一致时可整体替换，否则标记 `MODIFIED` 停止 |
+| `managed-block` | 只替换 `<!-- THEMASTERPLAN:BEGIN MANAGED -->` 与 `<!-- THEMASTERPLAN:END MANAGED -->` 之间的区块；区块外内容属于项目 |
 | `generated-if-missing` | 只在缺失时生成模板；已存在默认不覆盖 |
 | `project-owned` | 永不自动覆盖（项目文档、安全规范、部署配置、密钥等） |
 

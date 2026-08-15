@@ -14,11 +14,11 @@ from pathlib import Path, PurePosixPath
 SCHEMA_VERSION = 1
 
 
-class AwError(Exception):
+class TheMasterplanError(Exception):
     """Base error for the /TheMasterplan executor; message is user-facing."""
 
 
-class PathSafetyError(AwError):
+class PathSafetyError(TheMasterplanError):
     """Raised when a target path escapes the repository root."""
 
 
@@ -26,7 +26,7 @@ def is_volatile_executor_artifact(relative: str) -> bool:
     """Return whether a state path is disposable Python bytecode.
 
     State paths are serialized with forward slashes. Only bytecode inside
-    `.aw/bin` is ignored; source files and other unexpected executor files
+    `.themasterplan/bin` is ignored; source files and other unexpected executor files
     remain subject to normal integrity checks.
     """
     if not isinstance(relative, str):
@@ -35,7 +35,7 @@ def is_volatile_executor_artifact(relative: str) -> bool:
     parts = path.parts
     return (
         len(parts) >= 3
-        and parts[:2] == (".aw", "bin")
+        and parts[:2] == (".themasterplan", "bin")
         and (
             "__pycache__" in parts
             or path.suffix in {".pyc", ".pyo"}
@@ -64,8 +64,8 @@ def safe_join(root: Path, relative: str) -> Path:
     return target
 
 
-BLOCK_BEGIN = b"<!-- AW:BEGIN MANAGED -->"
-BLOCK_END = b"<!-- AW:END MANAGED -->"
+BLOCK_BEGIN = b"<!-- THEMASTERPLAN:BEGIN MANAGED -->"
+BLOCK_END = b"<!-- THEMASTERPLAN:END MANAGED -->"
 
 
 def sha256_of_file(path: Path) -> str:
@@ -94,13 +94,13 @@ def sha256_of_block(path: Path) -> str:
 
 
 def read_json(path: Path) -> dict:
-    """Read a JSON file; raises AwError with a readable message on failure."""
+    """Read a JSON file; raises TheMasterplanError with a readable message on failure."""
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
-        raise AwError(f"file not found: {path}")
+        raise TheMasterplanError(f"file not found: {path}")
     except json.JSONDecodeError as exc:
-        raise AwError(f"invalid JSON in {path}: {exc}")
+        raise TheMasterplanError(f"invalid JSON in {path}: {exc}")
 
 
 def write_json_atomic(path: Path, data: dict) -> None:

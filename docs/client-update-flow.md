@@ -1,16 +1,16 @@
 # 客户项目更新检测与升级流程（v3.2.0）
 
 > 面向采用项目说明 TheMasterplan 的更新检测行为与升级确认门。检测逻辑的
-> 权威实现是 `skills/themasterplan/scripts/awlib/update_check.py` 与
-> `aw.py check-update`；本文件只解释使用方式，不复制实现。
+> 权威实现是 `skills/themasterplan/scripts/tmlib/update_check.py` 与
+> `themasterplan.py check-update`；本文件只解释使用方式，不复制实现。
 
 ## 更新检测行为
 
 每次加载 `/TheMasterplan` Skill（或 OpenCode 环境的 `/themasterplan`）时，
-若项目存在 `.aw/state.json` 与 `.aw/bin/aw.py`，执行器只读运行：
+若项目存在 `.themasterplan/state.json` 与 `.themasterplan/bin/themasterplan.py`，执行器只读运行：
 
 ```bash
-python .aw/bin/aw.py check-update --root . --json
+python .themasterplan/bin/themasterplan.py check-update --root . --json
 ```
 
 检测只比较“当前采用版本”与“最新稳定 GitHub Release”，不修改任何项目
@@ -23,7 +23,7 @@ python .aw/bin/aw.py check-update --root . --json
 | `AHEAD` | 当前版本高于最新稳定 Release | 继续任务 |
 | `UNKNOWN` | 当前来源无法与稳定 Release 比较 | 继续任务 |
 | `UNAVAILABLE` | 网络或远端查询失败 | 只提示，不阻断任务 |
-| `NOT_ADOPTED` | 无有效 `.aw/state.json` | 继续任务 |
+| `NOT_ADOPTED` | 无有效 `.themasterplan/state.json` | 继续任务 |
 
 `check-update` 忽略 Draft、Prerelease（除非 `--include-prerelease`）、浮动
 `main`、未发布 Tag 与非 SemVer Tag；Release Tag 会解析为完整提交 SHA。
@@ -49,7 +49,7 @@ TheMasterplan 不会自动升级，也不会自动修改 `uses`、`policy-ref` �
 ```text
 check-update
   --root <project-root>                默认 .
-  --repository <owner/repo>            默认从 .aw/state.json 读取
+  --repository <owner/repo>            默认从 .themasterplan/state.json 读取
   --include-prerelease                 默认 false
   --no-cache                           默认 false（强制实时查询）
   --json                               输出机器可读 JSON（默认即 JSON）
@@ -86,18 +86,18 @@ check-update
 升级流程复用既有命令：
 
 ```bash
-python .aw/bin/aw.py plan-update \
+python .themasterplan/bin/themasterplan.py plan-update \
   --root . \
   --source <target-version> \
   --commit <target-full-sha> \
   --repository OasisSaber/TheMasterplan \
-  --output .aw/update-<target-version>.json
+  --output .themasterplan/update-<target-version>.json
 ```
 
 ```bash
-python .aw/bin/aw.py apply-update \
+python .themasterplan/bin/themasterplan.py apply-update \
   --root . \
-  --plan .aw/update-<target-version>.json \
+  --plan .themasterplan/update-<target-version>.json \
   --source <target-version> \
   --commit <target-full-sha> \
   --repository OasisSaber/TheMasterplan
@@ -112,7 +112,7 @@ repository）。被本地修改的文件不会被覆盖（`LOCAL_MODIFIED` 停�
 升级不会自动修改业务仓库的 GitHub Actions。采用者需手动同步：
 
 ```yaml
-uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@<target-version>
+uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@<target-version>
 with:
   policy-ref: <target-version>
 ```
@@ -154,7 +154,7 @@ v3.2.0 起不再维护 Agent Orchestrator / Trellis 专用 Adapter。若当前�
 
 ## 缓存说明
 
-检测结果可缓存到 `.aw/cache/update-check.json`（默认 6 小时 TTL，不随
+检测结果可缓存到 `.themasterplan/cache/update-check.json`（默认 6 小时 TTL，不随
 Git 提交，不包含 Token）。`--no-cache` 强制实时查询；缓存损坏时忽略并
 重新查询；缓存写入失败不影响检测结果。缓存不是功能依赖，删除无影响。
 

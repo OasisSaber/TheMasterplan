@@ -14,7 +14,7 @@
   管理 worker/session、task workspace/worktree/branch、Issue→PR 状态机、
   CI/review 路由，或 merge/release/deploy 工作流，则本任务状态为
   `ABSTAINED`。
-- `ABSTAINED` 是任务级瞬时状态，不写入 `.aw/state.json`，不修改项目文件；
+- `ABSTAINED` 是任务级瞬时状态，不写入 `.themasterplan/state.json`，不修改项目文件；
   TheMasterplan 不继续加载 Profile/专用工作流映射，不运行更新检测/升级，
   也不施加自己的 PR、reaction、cleanup 或发布生命周期。
 - 所有权不明确时，在任何写操作前询问人类；不得按品牌、目录名或版本号猜测，
@@ -80,6 +80,12 @@
 4. 确认没有扩大范围；
 5. 确认没有调试代码、临时文件、缓存、误删或失效引用；
 6. 在 Pull Request 中说明已知限制和未覆盖内容。
+
+创建或更新 Pull Request 后必须保障 CI 通过：
+
+7. 等待 Pull Request 关联的 CI 检查全部通过；
+8. CI 未通过时必须修正并重跑，不得把失败状态表述为通过；
+9. CI 通过后再通知用户“PR 待你合并”，不得提前通知。
 
 审查意见只使用三类表述：合并前必须修复、建议本次修复、可以后续处理；
 每条意见直接说明具体问题、影响和所需修复。

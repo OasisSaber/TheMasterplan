@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Unit and temp-repo integration tests for the /TheMasterplan executor (PR A).
 
-Loads ``skills/themasterplan/scripts/awlib`` via importlib and drives
-the real executor against temporary directories; the AW repository's own
+Loads ``skills/themasterplan/scripts/tmlib`` via importlib and drives
+the real executor against temporary directories; the TheMasterplan repository's own
 ``distribution/`` package is used as the fixture source.
 
-用法: python -m unittest scripts.test_aw_executor -v
+用法: python -m unittest scripts.test_executor -v
 """
 
 from __future__ import annotations
@@ -23,17 +23,17 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 EXECUTOR_DIR = REPO_ROOT / "skills" / "themasterplan" / "scripts"
 
 sys.path.insert(0, str(EXECUTOR_DIR))
-from awlib import AwError, PathSafetyError  # noqa: E402
-from awlib.apply import apply_adopt  # noqa: E402
-from awlib.inspect import detect_status, inspect  # noqa: E402
-from awlib.manifest import ManifestError, load_manifest  # noqa: E402
-from awlib.planning import plan_adopt  # noqa: E402
-from awlib.source import read_package_file, resolve_local  # noqa: E402
-from awlib.util import safe_join, sha256_of_file, write_json_atomic  # noqa: E402
-from awlib.verify import verify  # noqa: E402
-from aw import build_parser  # noqa: E402
+from tmlib import TheMasterplanError, PathSafetyError  # noqa: E402
+from tmlib.apply import apply_adopt  # noqa: E402
+from tmlib.inspect import detect_status, inspect  # noqa: E402
+from tmlib.manifest import ManifestError, load_manifest  # noqa: E402
+from tmlib.planning import plan_adopt  # noqa: E402
+from tmlib.source import read_package_file, resolve_local  # noqa: E402
+from tmlib.util import safe_join, sha256_of_file, write_json_atomic  # noqa: E402
+from tmlib.verify import verify  # noqa: E402
+from themasterplan import build_parser  # noqa: E402
 
-PACKAGE_ROOT = REPO_ROOT  # AW repo root contains distribution/
+PACKAGE_ROOT = REPO_ROOT  # TheMasterplan repo root contains distribution/
 TEST_COMMIT = "a" * 40
 
 
@@ -55,10 +55,10 @@ STATE_JSON = {
 }
 
 
-def run_aw(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
-    """Run aw.py as a subprocess for CLI-level tests."""
+def run_exec(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
+    """Run themasterplan.py as a subprocess for CLI-level tests."""
     return subprocess.run(
-        [sys.executable, str(EXECUTOR_DIR / "aw.py"), *args],
+        [sys.executable, str(EXECUTOR_DIR / "themasterplan.py"), *args],
         cwd=str(cwd),
         capture_output=True,
         text=True,
@@ -142,7 +142,7 @@ class InspectTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def _write_state(self, state: dict) -> None:
-        write_json_atomic(self.root / ".aw/state.json", state)
+        write_json_atomic(self.root / ".themasterplan/state.json", state)
 
     def test_absent_empty_dir(self) -> None:
         status, _ = detect_status(self.root)
@@ -155,8 +155,8 @@ class InspectTest(unittest.TestCase):
         self.assertEqual(status, "INCOMPLETE")
 
     def test_broken_state(self) -> None:
-        (self.root / ".aw").mkdir(parents=True)
-        (self.root / ".aw/state.json").write_text("{not json", encoding="utf-8")
+        (self.root / ".themasterplan").mkdir(parents=True)
+        (self.root / ".themasterplan/state.json").write_text("{not json", encoding="utf-8")
         status, _ = detect_status(self.root)
         self.assertEqual(status, "BROKEN")
 
@@ -259,18 +259,18 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
         self.assertNotIn("profiles/jj.md", add_dests)  # profile=git selected
 
         result = None  # apply via the real plan file below
-        plan_path = self.root / ".aw-plan.json"
+        plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
         applied = apply_adopt(self.root, plan_path, self._source())
         self.assertIn("core/policy.md", applied["written"])
         self.assertIn("AGENTS.md", applied["written"])
         self.assertTrue((self.root / "core/policy.md").is_file())
-        self.assertTrue((self.root / ".aw/state.json").is_file())
-        self.assertTrue((self.root / ".aw/bin/aw.py").is_file())
+        self.assertTrue((self.root / ".themasterplan/state.json").is_file())
+        self.assertTrue((self.root / ".themasterplan/bin/themasterplan.py").is_file())
         # AGENTS.md contains managed block markers
         agents = (self.root / "AGENTS.md").read_text(encoding="utf-8")
-        self.assertIn("<!-- AW:BEGIN MANAGED -->", agents)
-        self.assertIn("<!-- AW:END MANAGED -->", agents)
+        self.assertIn("<!-- THEMASTERPLAN:BEGIN MANAGED -->", agents)
+        self.assertIn("<!-- THEMASTERPLAN:END MANAGED -->", agents)
 
         # verify passes
         report = verify(self.root)
@@ -287,13 +287,13 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
 
     def test_existing_agents_block_preserved_and_replaced(self) -> None:
         (self.root / "AGENTS.md").write_text(
-            "PROJECT HEADER\n<!-- AW:BEGIN MANAGED -->old block<!-- AW:END MANAGED -->\nPROJECT FOOTER\n",
+            "PROJECT HEADER\n<!-- THEMASTERPLAN:BEGIN MANAGED -->old block<!-- THEMASTERPLAN:END MANAGED -->\nPROJECT FOOTER\n",
             encoding="utf-8",
         )
         plan = self._plan()
         agents_op = next(op for op in plan["files"] if op["destination"] == "AGENTS.md")
         self.assertEqual(agents_op["classification"], "BLOCK_PRESENT")
-        plan_path = self.root / ".aw-plan.json"
+        plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
         apply_adopt(self.root, plan_path, self._source())
         text = (self.root / "AGENTS.md").read_text(encoding="utf-8")
@@ -305,11 +305,11 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
     def test_agents_block_missing_stops(self) -> None:
         (self.root / "AGENTS.md").write_text("project-only content", encoding="utf-8")
         plan = self._plan()
-        plan_path = self.root / ".aw-plan.json"
+        plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
-        with self.assertRaises(AwError):
+        with self.assertRaises(TheMasterplanError):
             apply_adopt(self.root, plan_path, self._source())
-        self.assertFalse((self.root / ".aw/state.json").exists())
+        self.assertFalse((self.root / ".themasterplan/state.json").exists())
 
     def test_validation_path_exists_kept(self) -> None:
         (self.root / "scripts").mkdir()
@@ -317,7 +317,7 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
         plan = self._plan()
         check_op = next(op for op in plan["files"] if op["destination"] == "scripts/check.sh")
         self.assertEqual(check_op["classification"], "EXISTS_KEEP")
-        plan_path = self.root / ".aw-plan.json"
+        plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
         apply_adopt(self.root, plan_path, self._source())
         self.assertEqual(
@@ -343,7 +343,7 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
     def test_block_outside_change_keeps_current(self) -> None:
         """Editing AGENTS.md outside the managed block keeps CURRENT/verify OK."""
         plan = self._plan()
-        plan_path = self.root / ".aw-plan.json"
+        plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
         apply_adopt(self.root, plan_path, self._source())
         # Project content outside the block (project facts section).
@@ -359,7 +359,7 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
     def test_block_inside_change_marks_modified(self) -> None:
         """Editing inside the managed block returns MODIFIED and verify fails."""
         plan = self._plan()
-        plan_path = self.root / ".aw-plan.json"
+        plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
         apply_adopt(self.root, plan_path, self._source())
         agents = self.root / "AGENTS.md"
@@ -378,14 +378,14 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
         source_content = read_package_file(PACKAGE_ROOT, "core/workflow.md")
         (self.root / "core/workflow.md").write_bytes(source_content)
         plan = self._plan()
-        plan_path = self.root / ".aw-plan.json"
+        plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
         # Modify the target after planning.
         (self.root / "core/workflow.md").write_text("tampered after plan\n", encoding="utf-8")
-        with self.assertRaises(AwError) as ctx:
+        with self.assertRaises(TheMasterplanError) as ctx:
             apply_adopt(self.root, plan_path, self._source())
         self.assertIn("changed since plan", str(ctx.exception))
-        self.assertFalse((self.root / ".aw/state.json").exists(), "nothing may be written")
+        self.assertFalse((self.root / ".themasterplan/state.json").exists(), "nothing may be written")
 
     def test_source_changed_after_plan_stops(self) -> None:
         """Apply must refuse when the package source file changed after planning."""
@@ -400,14 +400,14 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
                 adapter="generic",
                 validation_path="scripts/check.sh",
             )
-            plan_path = self.root / ".aw-plan.json"
+            plan_path = self.root / ".themasterplan-plan.json"
             write_json_atomic(plan_path, plan)
             # Tamper with the package source after planning.
             (pkg / "core" / "workflow.md").write_bytes(b"tampered package\n")
-            with self.assertRaises(AwError) as ctx:
+            with self.assertRaises(TheMasterplanError) as ctx:
                 apply_adopt(self.root, plan_path, resolve_local(pkg, commit=TEST_COMMIT))
             self.assertIn("source file changed since plan", str(ctx.exception))
-            self.assertFalse((self.root / ".aw/state.json").exists())
+            self.assertFalse((self.root / ".themasterplan/state.json").exists())
 
     def test_late_source_changed_stops_before_any_write(self) -> None:
         """A later source mismatch must fail before the first project write."""
@@ -423,13 +423,13 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
                 adapter="generic",
                 validation_path="scripts/check.sh",
             )
-            plan_path = self.root / ".aw-plan.json"
+            plan_path = self.root / ".themasterplan-plan.json"
             write_json_atomic(plan_path, plan)
             # adapters/generic.md is selected after the core files in the
             # manifest, so the old implementation could have written earlier
             # files before detecting this mismatch.
             (pkg / "adapters" / "generic.md").write_bytes(b"tampered later source\n")
-            with self.assertRaises(AwError) as ctx:
+            with self.assertRaises(TheMasterplanError) as ctx:
                 apply_adopt(self.root, plan_path, resolve_local(pkg, commit=TEST_COMMIT))
             self.assertIn("source file changed since plan", str(ctx.exception))
             # No project write may have happened.
@@ -437,7 +437,7 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
             self.assertFalse((self.root / "core" / "policy.md").exists())
             self.assertFalse((self.root / "profiles" / "git.md").exists())
             self.assertFalse((self.root / "AGENTS.md").exists())
-            self.assertFalse((self.root / ".aw" / "state.json").exists())
+            self.assertFalse((self.root / ".themasterplan" / "state.json").exists())
 
     def test_custom_default_branch_rendered(self) -> None:
         """The consumer workflow must target the selected default branch."""
@@ -450,13 +450,13 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
             validation_path="scripts/check.sh",
             default_branch="master",
         )
-        plan_path = self.root / ".aw-plan.json"
+        plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
         apply_adopt(self.root, plan_path, self._source())
         workflow = (self.root / ".github" / "workflows" / "check.yml").read_text(encoding="utf-8")
         self.assertEqual(workflow.count('branches: ["master"]'), 2)
         self.assertNotIn("branches: [main]", workflow)
-        state = json.loads((self.root / ".aw" / "state.json").read_text(encoding="utf-8"))
+        state = json.loads((self.root / ".themasterplan" / "state.json").read_text(encoding="utf-8"))
         self.assertEqual(state["selection"]["default_branch"], "master")
 
     def test_custom_validation_path(self) -> None:
@@ -465,7 +465,7 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
         dests = [op["destination"] for op in plan["files"]]
         self.assertIn("tools/verify.sh", dests)
         self.assertNotIn("scripts/check.sh", dests, "default check.sh must not be installed")
-        plan_path = self.root / ".aw-plan.json"
+        plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
         apply_adopt(self.root, plan_path, self._source())
         workflow = (self.root / ".github/workflows/check.yml").read_text(encoding="utf-8")
@@ -484,7 +484,7 @@ class CliTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_inspect_cli_absent(self) -> None:
-        proc = run_aw(["inspect", "--root", str(self.root)], self.root)
+        proc = run_exec(["inspect", "--root", str(self.root)], self.root)
         self.assertEqual(proc.returncode, 0)
         data = json.loads(proc.stdout)
         self.assertEqual(data["status"], "ABSENT")
@@ -492,7 +492,7 @@ class CliTest(unittest.TestCase):
     def test_plan_apply_verify_cli_roundtrip(self) -> None:
         plan_out = self.root / "plan.json"
         manifest = load_manifest(PACKAGE_ROOT / "distribution" / "manifest.json")
-        proc = run_aw(
+        proc = run_exec(
             [
                 "plan-adopt",
                 "--root", str(self.root),
@@ -507,12 +507,12 @@ class CliTest(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertTrue(plan_out.is_file())
-        apply_proc = run_aw(
+        apply_proc = run_exec(
             ["apply-adopt", "--root", str(self.root), "--plan", str(plan_out), "--source", str(PACKAGE_ROOT), "--commit", TEST_COMMIT],
             self.root,
         )
         self.assertEqual(apply_proc.returncode, 0, apply_proc.stderr)
-        verify_proc = run_aw(["verify", "--root", str(self.root)], self.root)
+        verify_proc = run_exec(["verify", "--root", str(self.root)], self.root)
         self.assertEqual(verify_proc.returncode, 0, verify_proc.stderr)
 
 

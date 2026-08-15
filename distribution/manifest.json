@@ -47,8 +47,8 @@
       "required": false
     },
     {
-      "source": "skills/themasterplan/scripts/awlib/update_check.py",
-      "destination": ".aw/bin/awlib/update_check.py",
+      "source": "skills/themasterplan/scripts/tmlib/update_check.py",
+      "destination": ".themasterplan/bin/tmlib/update_check.py",
       "ownership": "managed-replace",
       "required": true
     },
