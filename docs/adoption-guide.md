@@ -168,7 +168,7 @@ TheMasterplan 不再提供外部 orchestrator 专用 Adapter。
 - [ ] 做一处容易审阅和回滚的变更，运行 `bash scripts/check.sh`；真实 Windows 同时运行 `pwsh -NoProfile -File scripts/check.ps1`，macOS 在本机运行 Bash 入口。
 - [ ] 阅读完整 diff，只 push 任务 bookmark，并确认该 bookmark 已跟踪 `@origin`。
 - [ ] 创建 Draft Pull Request，确认正文校验与仓库 CI 通过。
-- [ ] 由人类决定并执行 Squash Merge；Agent 不执行 merge。
+- [ ] 由人类决定并执行 Squash Merge；Agent 不执行 merge（微小修复快速通道除外，见 [core/workflow.md](../core/workflow.md) §1）。
 - [ ] fetch 最新 `main`，新建基于 `main` 的空 change，并用 `jj bookmark forget` 完成本地清理。
 - [ ] 若要删除仍存在的远端 bookmark，另行记录明确人类决定，先 dry-run，再执行远端删除。
 - [ ] 将演练任务、PR、合并提交、验证结果和任何平台限制写入采用记录。
