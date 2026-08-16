@@ -70,7 +70,9 @@ TheMasterplan: ABSTAINED — external delivery workflow owns this task.
 
 ## Pull Request 正文契约（ACTIVE 时）
 
-创建或更新 Pull Request 前，优先读取并使用项目的
+微小修复快速通道（`core/workflow.md` §1）不创建 Pull Request：会话内明确
+授权后直接合并并一次性汇报（改动内容、验证结果、授权来源与范围）。其余
+任务创建或更新 Pull Request 前，优先读取并使用项目的
 `.github/pull_request_template.md`。
 
 若项目调用 TheMasterplan 中央 `themasterplan-check`，PR 正文至少必须包含真实 Issue

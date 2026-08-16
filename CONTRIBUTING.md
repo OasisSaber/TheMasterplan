@@ -1,6 +1,6 @@
 # Contributing to TheMasterplan
 
-仅在修改工作流本身时维护本仓库。开始前读取 [AGENTS.md](AGENTS.md)，并在以下两条任务路径中选择一条。
+仅在修改工作流本身时维护本仓库。开始前读取 [AGENTS.md](AGENTS.md)，并在以下三条任务路径中选择一条。
 
 ## 支持环境
 
@@ -48,7 +48,18 @@ jj new main -m "authorized task: <single outcome>"
 jj bookmark create codex/task-<short-name> -r @
 ```
 
-两条路径二选一。无 Issue 时不得伪造编号，Pull Request 必须记录授权来源、目标和范围。当前 Issue 或明确人类授权不能覆盖项目安全、隐私、合规、数据保护、受保护分支、发布、部署或破坏性操作限制。
+三条路径选一。无 Issue 时不得伪造编号；创建 Pull Request 或快速通道直接合并必须记录授权来源、目标和范围。当前 Issue 或明确人类授权不能覆盖项目安全、隐私、合规、数据保护、受保护分支、发布、部署或破坏性操作限制。
+
+## 微小修复快速通道
+
+先在当前会话取得针对该修复的明确人类授权（不得复用其他事务的聚合授权）：
+
+```bash
+jj new main -m "authorized fast-track: <single outcome>"
+jj bookmark create codex/task-<short-name> -r @
+```
+
+适用范围与判定标准见 [core/workflow.md](core/workflow.md) §1：目标清晰、无范围争议，改动为单个文件（或极少数同主题文件）、行数 ≤30，仅涉及文档/配置/测试/注释（不触及 src 核心逻辑与公共接口），不涉及持久化数据、部署、发布、远端数据或破坏性操作，权威验证入口通过、完整 diff 审阅无异常。符合时压缩为单一 commit 直接推入 `main`（不创建 Pull Request、不逐次请求审批），合并 commit 消息与一次性汇报必须记录授权来源、目标、范围。判定存疑或仓库分支保护不允许直接推送时，回退小型低风险任务路径；合并后 `main` 的 CI（若配置 push 触发）通过，否则以本地权威验证为准。
 
 ## 实现与验证
 
@@ -108,6 +119,8 @@ gh pr create --draft --base main --head <task-bookmark>
 ```
 
 Pull Request 应说明关联 Issue 或明确授权、实现结果、变更内容、验证证据、已知限制和未覆盖内容。Agent 完成自审后可以 push、创建或更新 Pull Request。只有人类可以决定是否 Squash Merge；Agent 不得未经批准 merge 或 release。发布（推进稳定分支、创建 tag、创建 Release 等）采用单一最终发布审核：授权语义见 [core/policy.md](core/policy.md)，Git 与 jj 下的安全执行方式见 [profiles/git.md](profiles/git.md) 与 [profiles/jj.md](profiles/jj.md)。
+
+微小修复快速通道（见上文）不创建 Pull Request：会话内明确授权后，将任务 change 压缩为单一 commit 直接推入 `main` 并一次性汇报；判定存疑或仓库分支保护不允许直接推送时回退本 PR 流程。
 
 同一 bookmark 再次 push 会更新现有 Pull Request。首次 push 后，change 已属于已发布历史；任何 restack 或内容更新都必须先取得明确人类授权，然后重新运行完整验证、阅读完整 diff，并再次 push 同一 bookmark。
 
@@ -169,7 +182,7 @@ jj bookmark list --all-remotes <task-bookmark>
 
 `forget` 会取消本地 bookmark 及其跟踪关系，不会把远端删除排入下一次 push。如果 GitHub 已在人类合并时删除远端分支，下一次 fetch 会同步该状态。
 
-只有在另一次单独、明确的人类决定要求删除仍存在的远端 bookmark 时，才使用远端清理路径：
+已合并任务分支的远端删除属于 PR 生命周期收尾（core/policy.md §7.1）：满足全部豁免条件（Agent 为任务创建、已合并进默认分支、无开放 PR 引用、不涉 tag/Release/他人分支/强推）时无需另行授权；任一条件不满足，仍须另一次单独、明确的人类决定。远端清理路径：
 
 ```bash
 jj bookmark delete <task-bookmark>
@@ -177,7 +190,7 @@ jj git push --deleted --remote origin --dry-run
 jj git push --deleted --remote origin
 ```
 
-必须阅读 dry-run 的完整输出；如果包含目标以外的任何待删除 bookmark，停止。Agent 不得把合并授权或普通 push 授权解释为远端删除授权。
+必须阅读 dry-run 的完整输出；如果包含目标以外的任何待删除 bookmark，停止。Agent 不得把合并授权或普通 push 授权解释为远端删除授权；已合并任务分支清理仅限 core/policy.md §7.1 列明的豁免条件，删除后以 `git ls-remote` 验证 ref 消失并记录。
 
 ## Pull Request 自审
 

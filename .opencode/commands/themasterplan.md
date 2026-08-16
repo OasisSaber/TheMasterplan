@@ -28,6 +28,11 @@ When `ACTIVE`, the required load order is:
 加载 canonical Skill 后执行其 `ACTIVE` 更新检测步骤；检测到更新时等待用户选择；
 不得自动生成或应用升级。
 
+The fast-track path (`core/workflow.md` §1) merges directly to `main` without a
+Pull Request after an explicit in-session authorization; record the
+authorization source, goal, and scope in the merge commit message and the
+one-shot report.
+
 Before creating or updating a Pull Request, follow the canonical Skill's PR body
 contract and `.github/pull_request_template.md` when present. Do not invent an
 Issue or claim validation that did not run.

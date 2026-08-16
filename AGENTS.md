@@ -55,9 +55,9 @@
 
 ## 任务路径
 
-复杂任务与小型低风险任务的路径、适用范围与授权记录要求见
-[core/workflow.md](core/workflow.md) §1。无 Issue 时不得伪造编号；实现需要
-扩大范围时必须停止，向人类说明原因并转为 Issue 路径。
+复杂任务、小型低风险任务与微小修复快速通道的路径、适用范围与授权记录
+要求见 [core/workflow.md](core/workflow.md) §1。无 Issue 时不得伪造编号；
+实现需要扩大范围时必须停止，向人类说明原因并转为 Issue 路径。
 
 ## 验证与交付
 
@@ -97,5 +97,6 @@ Agent 不得把允许 push 或创建 Pull Request 解释为允许 merge 或 rele
 
 - 不提交密钥、访问令牌或明显的私人数据。
 - 不提交本机绝对路径、缓存、临时文件或无关生成物。
-- `main` 只接受经 Pull Request 的人类决定 Squash Merge。
+- `main` 只接受人类决定的 Squash Merge：默认经 Pull Request；微小修复
+  快速通道（`core/workflow.md` §1）经会话内明确授权后可直接合并。
 - 发现当前操作违反已记录规则、权限或范围时，必须在产生外部影响前停止并请求人类修正或明确授权。

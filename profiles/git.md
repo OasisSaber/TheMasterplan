@@ -161,6 +161,6 @@ TAG_COMMIT=$(git ls-remote --tags origin "refs/tags/$TAG^{}" | awk '{print $1}')
 - 在最终发布审核前创建 tag 或创建 Release；
 - 在固定 tag 消费者 smoke test 通过前创建 Release；
 - 推进、修改或移动 `v1`（兼容线冻结，tag-only 发布不涉及 v1）；
-- 删除远端分支或资源。
+- 删除远端分支或资源（`core/policy.md` §7.1 已合并任务分支清理豁免除外）。
 
 需要执行以上任何操作时，按 `core/policy.md` 的授权失效条件停止并重新审核。
