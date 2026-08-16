@@ -122,10 +122,14 @@ jobs:
     name: check
     permissions:
       contents: read
-    uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v1
+    uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v4.0.0
     with:
+      policy-ref: v4.0.0
       project-check-path: scripts/check.sh
 ```
+
+v1 兼容线消费者继续使用 `aw-check.yml@v1`（`policy-ref` 保持默认 `v1`），
+见 [docs/release-channels.md](docs/release-channels.md)。
 
 TheMasterplan 负责工作流治理、PR 合规检查、安全基线与调用约束；业务仓库负责自己的
 依赖安装、lint、typecheck、test、build 等专属验证，并通过项目内

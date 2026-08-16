@@ -4,21 +4,43 @@ TheMasterplan 中央 Actions 接口使用以下版本通道：
 
 ```text
 main        TheMasterplan 开发与自测
-v1          兼容线（已冻结，指向承载 v2.0.0 内容的提交，不再推进）
-v1.1.0      不可变 Release tag
+v1          兼容线（已冻结，指向承载 v2.0.0 内容的提交，不再推进；工作流路径 aw-check.yml）
+v4.0.0      当前版不可变 Release tag（工作流路径 themasterplan-check.yml）
+v1.1.0      历史不可变 Release tag（工作流路径 aw-check.yml）
 完整 SHA    最高可复现性和紧急固定
 ```
 
 ## 默认调用
 
+v1 兼容线（`policy-ref` 默认 `v1`）：
+
 ```yaml
-uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v1
+uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1
+```
+
+当前版（推荐新采用，tag-only 精确固定）：
+
+```yaml
+uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v4.0.0
+with:
+  policy-ref: v4.0.0
 ```
 
 ## 严格固定
 
+当前版：
+
 ```yaml
-uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v1.1.0
+uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v4.0.0
+with:
+  policy-ref: v4.0.0
+  project-check-path: scripts/check.sh
+```
+
+v1 兼容线：
+
+```yaml
+uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1.1.0
 with:
   policy-ref: v1.1.0
   project-check-path: scripts/check.sh
@@ -66,7 +88,7 @@ Agent 连续执行：创建并 push annotated tag → 固定 tag 消费者 smoke
 - 禁止 Agent 凭据更新；
 - 禁止直接在 `v1` 开发。
 
-`policy-ref` 默认值保持 `v1`：`@v1` 永远解析到冻结指向，现有消费者无需改动。
+`policy-ref` 默认值保持 `v1`：`@v1` 永远解析到冻结指向的 `aw-check.yml`，现有消费者无需改动。
 
 ## 回退流程
 

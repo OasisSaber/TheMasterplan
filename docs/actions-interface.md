@@ -5,11 +5,23 @@ TheMasterplan 提供集中维护、版本化发布的 GitHub Actions 可重用�
 
 ## 工作流路径
 
+v1 兼容线（冻结，`policy-ref` 默认 `v1`）：
+
 ```yaml
-uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v1
+uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1
 ```
 
-该路径在 `v1` 生命周期内不得移动或重命名。
+当前版（v4.0.0，tag-only 精确固定）：
+
+```yaml
+uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v4.0.0
+with:
+  policy-ref: v4.0.0
+```
+
+`aw-check.yml` 在 v1 兼容线生命周期内不得移动或重命名。工作流路径移动属
+公共 API 变更，只能在下一主版本执行；v4.0.0 已随改名
+（aw-check.yml → themasterplan-check.yml）执行。
 
 ## 输入
 
@@ -22,6 +34,9 @@ uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v1
 
 不得加入任意 `setup-command`、`check-command`、Shell 表达式、Secret 输入、
 发布或部署参数、自动合并参数或写权限开关。
+
+固定版本调用时 `policy-ref` 必须等于 `uses` 引用版本（v4.0.0 通道必须
+显式指定 `policy-ref: v4.0.0`），见 [release-channels.md](release-channels.md)。
 
 ## 固定行为
 
@@ -41,9 +56,9 @@ uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v1
 
 ```text
 业务仓库 .github/workflows/check.yml
-        │ uses @v1
+        │ uses @v1（aw-check.yml）或 @v4.0.0（themasterplan-check.yml）
         ▼
-TheMasterplan .github/workflows/themasterplan-check.yml
+TheMasterplan reusable workflow
         │
         ├── 检出调用方仓库
         ├── 检出 TheMasterplan 策略实现
@@ -105,7 +120,7 @@ TheMasterplan 决定如何触发、如何验证采用契约、如何检查 PR �
 `v1` 内允许：修复错误、改善日志、增加不阻断的诊断、增加带默认值的可选输入、
 更新固定的第三方 Action SHA、改善性能、修复误报、改善文档、增加测试覆盖。
 
-`v1` 内禁止：更改 reusable workflow 路径；删除或重命名输入；更改默认项目
+`v1` 内禁止：更改 v1 兼容线内 reusable workflow 路径（aw-check.yml）；删除或重命名输入；更改默认项目
 验证入口；更改 required check 公共名称；新增 Secret 要求或写权限；自动
 merge、release 或 deploy；修改 PR 必填标题；修改自审项文本导致现有调用失败；
 引入新的破坏性失败条件；把 Ubuntu required check 直接替换为其他平台；无
