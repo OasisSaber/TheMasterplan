@@ -11,12 +11,12 @@ v1 兼容线（冻结，`policy-ref` 默认 `v1`）：
 uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1
 ```
 
-当前版（v4.0.0，tag-only 精确固定）：
+当前版（v4.1.0，tag-only 精确固定）：
 
 ```yaml
-uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v4.0.0
+uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v4.1.0
 with:
-  policy-ref: v4.0.0
+  policy-ref: v4.1.0
 ```
 
 `aw-check.yml` 在 v1 兼容线生命周期内不得移动或重命名。工作流路径移动属
@@ -35,8 +35,8 @@ with:
 不得加入任意 `setup-command`、`check-command`、Shell 表达式、Secret 输入、
 发布或部署参数、自动合并参数或写权限开关。
 
-固定版本调用时 `policy-ref` 必须等于 `uses` 引用版本（v4.0.0 通道必须
-显式指定 `policy-ref: v4.0.0`），见 [release-channels.md](release-channels.md)。
+固定版本调用时 `policy-ref` 必须等于 `uses` 引用版本（v4.1.0 通道必须
+显式指定 `policy-ref: v4.1.0`），见 [release-channels.md](release-channels.md)。
 
 ## 固定行为
 
@@ -56,7 +56,7 @@ with:
 
 ```text
 业务仓库 .github/workflows/check.yml
-        │ uses @v1（aw-check.yml）或 @v4.0.0（themasterplan-check.yml）
+        │ uses @v1（aw-check.yml）或 @v4.1.0（themasterplan-check.yml）
         ▼
 TheMasterplan reusable workflow
         │

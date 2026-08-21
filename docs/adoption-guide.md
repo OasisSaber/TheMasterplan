@@ -47,9 +47,9 @@ jobs:
     name: check
     permissions:
       contents: read
-    uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v4.0.0
+    uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v4.1.0
     with:
-      policy-ref: v4.0.0
+      policy-ref: v4.1.0
       project-check-path: scripts/check.sh
 ```
 
