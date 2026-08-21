@@ -1,4 +1,4 @@
-# 客户项目更新检测与升级流程（v4.0.0）
+# 客户项目更新检测与升级流程（v4.1.0）
 
 > 面向采用项目说明 TheMasterplan 的更新检测行为与升级确认门。检测逻辑的
 > 权威实现是 `skills/themasterplan/scripts/tmlib/update_check.py` 与

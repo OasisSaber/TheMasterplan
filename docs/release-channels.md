@@ -5,7 +5,8 @@ TheMasterplan 中央 Actions 接口使用以下版本通道：
 ```text
 main        TheMasterplan 开发与自测
 v1          兼容线（已冻结，指向承载 v2.0.0 内容的提交，不再推进；工作流路径 aw-check.yml）
-v4.0.0      当前版不可变 Release tag（工作流路径 themasterplan-check.yml）
+v4.1.0      当前版不可变 Release tag（工作流路径 themasterplan-check.yml）
+v4.0.0      历史不可变 Release tag（工作流路径 themasterplan-check.yml）
 v1.1.0      历史不可变 Release tag（工作流路径 aw-check.yml）
 完整 SHA    最高可复现性和紧急固定
 ```
@@ -21,9 +22,9 @@ uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1
 当前版（推荐新采用，tag-only 精确固定）：
 
 ```yaml
-uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v4.0.0
+uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v4.1.0
 with:
-  policy-ref: v4.0.0
+  policy-ref: v4.1.0
 ```
 
 ## 严格固定
@@ -31,9 +32,9 @@ with:
 当前版：
 
 ```yaml
-uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v4.0.0
+uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v4.1.0
 with:
-  policy-ref: v4.0.0
+  policy-ref: v4.1.0
   project-check-path: scripts/check.sh
 ```
 

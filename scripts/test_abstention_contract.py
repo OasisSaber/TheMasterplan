@@ -53,7 +53,7 @@ class AbstentionBoundaryTests(unittest.TestCase):
 
     def test_manifest_is_v320_and_generic_only(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-        self.assertEqual(manifest["distribution_version"], "v4.0.0")
+        self.assertEqual(manifest["distribution_version"], "v4.1.0")
         self.assertEqual(manifest["components"]["adapters"], ["generic"])
         destinations = {entry["destination"] for entry in manifest["files"]}
         self.assertIn("adapters/generic.md", destinations)
