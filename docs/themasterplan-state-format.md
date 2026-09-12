@@ -56,9 +56,11 @@ detected_adapter
 "adapter": "generic"
 ```
 
-被视为可迁移的历史字段。`plan-update` 应接受它，并在生成 v5 update plan 时将
-其从 `selection` 中移除。除 `generic` 外的历史 Adapter 值继续 fail closed，不得
-静默迁移。
+被视为可迁移的历史字段。**v5 执行器**的 `plan-update` 接受它，并在生成
+下一份 v5 update plan 时从 `selection` 中移除。首次从 v4.1.x 升到 v5 时，
+发起事务的是已安装的 v4 旧执行器，因此该旧字段可能在首次 apply 后暂时保留；
+安装完成后的 v5 执行器会容忍这一历史字段，并在后续 state 写回时规范化移除。
+除 `generic` 外的历史 Adapter 值继续 fail closed，不得静默迁移。
 
 ## 临时任务状态
 
