@@ -32,7 +32,7 @@ TheMasterplan 是面向个人开发者的“单一交付责任人的 AI 辅助�
 执行 Harness 可以直接使用 TheMasterplan；一旦另一个系统已经拥有当前任务的
 worker/session、workspace、PR/CI-review 或发布生命周期，本任务状态为
 `ABSTAINED`，TheMasterplan 不再施加自己的任务工作流，也不维护该系统的专用
-Adapter。边界见 [docs/external-workflow-abstention.md](docs/external-workflow-abstention.md)。
+兼容层。边界见 [docs/external-workflow-abstention.md](docs/external-workflow-abstention.md)。
 - Jujutsu：本文档命令已使用 `0.43.0` 核对；更高版本不是自动验证范围，采用时必须重新运行烟雾测试。
 - Git：文档假设 `2.34.0` 或更高版本。
 - 示例默认远端为 `origin`、受保护分支为 `main`。
@@ -49,14 +49,17 @@ Adapter。边界见 [docs/external-workflow-abstention.md](docs/external-workflo
 
 ### 最小采用集合（含薄 Skill）
 
-最小采用集合为：根部 `AGENTS.md`、`core/`、所需 `profiles/` 与可选
-`adapters/`；[skills/themasterplan](skills/themasterplan/SKILL.md)
-是客户端加载入口，不是完整规则本体——仅复制 Skill 不构成完整采用，必须
-同时采用上述仓库规则文件。Skill 加载后会检测 TheMasterplan 文件、声明加载顺序与权威
-来源，并在 `AGENTS.md`、`core/` 或所需 Profile 缺失时提示“TheMasterplan 未完整安装”。
-采用者仍须填写项目事实、配置真实验证命令与 GitHub 保护，并按
-[采用指南](docs/adoption-guide.md)完成烟雾测试。发布与授权规则以
-`core/policy.md` 与 `profiles/` 为权威来源（见 [core/policy.md](core/policy.md)）。
+v5 的最小采用集合为：根部 `AGENTS.md`、`core/`、选定的 VCS Profile/
+参考文件，以及 [skills/themasterplan](skills/themasterplan/SKILL.md)。
+
+Skill 只是最小 Context Router，不复制完整工作流，也不在普通任务开始时自动
+预读 Policy、Release、Update 或 VCS 文档。Agent 先读取 `AGENTS.md`，再按
+Context Router 只加载当前任务需要的材料。仅复制 Skill 仍不构成完整采用。
+
+采用者须填写项目事实、配置真实验证命令与 GitHub 保护，并按
+[采用指南](docs/adoption-guide.md)完成烟雾测试。更新检测只在明确的
+update/adopt/maintenance 意图下按
+[client-update-flow.md](docs/client-update-flow.md)执行。
 
 所有采用方式都应按[采用指南](docs/adoption-guide.md)记录实际使用的 Release tag 或 commit SHA，而不是默认写入固定版本号。
 
