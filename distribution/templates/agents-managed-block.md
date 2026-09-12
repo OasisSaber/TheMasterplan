@@ -3,12 +3,12 @@
 
 This block is the project Context Router. Load guidance only when the task needs it.
 
-- routine delivery: `core/workflow.md`
+- routine delivery and external-ownership decisions: `core/workflow.md`
 - authorization / merge / release / destructive remote action: `core/policy.md`
 - Git release/tag: `profiles/git.md`
 - Jujutsu release/tag: `profiles/jj.md`
-- adoption/update: `docs/client-update-flow.md`
-- external delivery owner: `docs/external-workflow-abstention.md`
+- adoption/update maintenance: use the installed `.themasterplan/bin/themasterplan.py`
+  commands; consult upstream adoption/update docs only for that maintenance task
 
 Do not preload the whole rule stack.
 
