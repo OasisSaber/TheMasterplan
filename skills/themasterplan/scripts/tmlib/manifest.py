@@ -98,9 +98,8 @@ def validate_files(files: list) -> None:
             )
 
 
-def select_files(manifest: dict, profile: str, adapter: str) -> list[dict]:
+def select_files(manifest: dict, profile: str) -> list[dict]:
     profile_names = set(manifest.get("components", {}).get("profiles", []))
-    adapter_names = set(manifest.get("components", {}).get("adapters", []))
     selected: list[dict] = []
     for entry in manifest["files"]:
         destination = entry["destination"]
@@ -108,12 +107,6 @@ def select_files(manifest: dict, profile: str, adapter: str) -> list[dict]:
             if (
                 profile not in profile_names
                 or not destination.startswith(f"profiles/{profile}.")
-            ):
-                continue
-        if destination.startswith("adapters/"):
-            if (
-                adapter not in adapter_names
-                or not destination.startswith(f"adapters/{adapter}.")
             ):
                 continue
         selected.append(entry)
