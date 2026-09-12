@@ -42,10 +42,10 @@ SOURCE_BRANCH=main
 CANDIDATE=$(git ls-remote origin "refs/heads/$SOURCE_BRANCH" | awk '{print $1}')
 [ -n "$CANDIDATE" ] || exit 1
 
-# 目标 tag（审核中已列明）
-TAG=v1.2.0
-# Release Notes 文件（审核时已准备）
-NOTES_FILE=<notes-file>
+# 目标 tag 与 Release Notes 已在最终审核中列明。
+# 运行示例前显式注入，避免文档携带可误执行的历史版本号。
+TAG="${TAG:?set TAG to the approved release tag}"
+NOTES_FILE="${NOTES_FILE:?set NOTES_FILE to the approved notes file}"
 
 # 1. 目标 tag 必须不存在（远端）
 if git ls-remote --tags origin "refs/tags/$TAG" | grep -q .; then
