@@ -1,4 +1,4 @@
-# 客户项目更新检测与升级流程（v4.1.0）
+# 客户项目更新检测与升级流程（v5.0.0）
 
 > 面向采用项目说明 TheMasterplan 的更新检测行为与升级确认门。检测逻辑的
 > 权威实现是 `skills/themasterplan/scripts/tmlib/update_check.py` 与
@@ -6,24 +6,24 @@
 
 ## 更新检测行为
 
-每次加载 `/TheMasterplan` Skill（或 OpenCode 环境的 `/themasterplan`）时，
-若项目存在 `.themasterplan/state.json` 与 `.themasterplan/bin/themasterplan.py`，执行器只读运行：
+v5 将更新检测从普通 Skill 调用的默认 side task 改为**明确意图触发**。只有用户
+提出 update、adopt、maintenance、版本检查等相关请求时，才加载本文件并运行：
 
 ```bash
 python .themasterplan/bin/themasterplan.py check-update --root . --json
 ```
 
-检测只比较“当前采用版本”与“最新稳定 GitHub Release”，不修改任何项目
-文件。可能的状态：
+`check-update` 是只读操作，只比较“当前采用版本”与“最新稳定 GitHub Release”，
+不修改项目文件。可能的状态：
 
-| 状态 | 含义 | Skill 行为 |
+| 状态 | 含义 | 命令后的处理 |
 |---|---|---|
-| `CURRENT` | 当前版本等于最新稳定版本 | 简短说明，继续任务 |
-| `UPDATE_AVAILABLE` | 存在更高稳定版本 | 报告版本与提交身份，询问用户 |
-| `AHEAD` | 当前版本高于最新稳定 Release | 继续任务 |
-| `UNKNOWN` | 当前来源无法与稳定 Release 比较 | 继续任务 |
-| `UNAVAILABLE` | 网络或远端查询失败 | 只提示，不阻断任务 |
-| `NOT_ADOPTED` | 无有效 `.themasterplan/state.json` | 继续任务 |
+| `CURRENT` | 当前版本等于最新稳定版本 | 报告结果 |
+| `UPDATE_AVAILABLE` | 存在更高稳定版本 | 报告版本与提交身份，由用户决定是否生成计划 |
+| `AHEAD` | 当前版本高于最新稳定 Release | 报告结果 |
+| `UNKNOWN` | 当前来源无法与稳定 Release 比较 | 报告结果 |
+| `UNAVAILABLE` | 网络或远端查询失败 | 如实报告，不影响无关任务 |
+| `NOT_ADOPTED` | 无有效 `.themasterplan/state.json` | 报告未采用 |
 
 `check-update` 忽略 Draft、Prerelease（除非 `--include-prerelease`）、浮动
 `main`、未发布 Tag 与非 SemVer Tag；Release Tag 会解析为完整提交 SHA。
@@ -132,12 +132,17 @@ with:
 .opencode/commands/themasterplan.md
 ```
 
-v3.2.0 起不再维护 Agent Orchestrator / Trellis 专用 Adapter。若当前任务已经
-由外部交付工作流拥有，Skill 进入 `ABSTAINED`，不运行更新检测或升级。
+v5 删除当前 CLI/state/Harness 中的 Adapter 抽象。新采用不再写入
+`selection.adapter`，也没有 `--adapter` 参数或 `adapters/generic.md`。
 
-历史采用状态若选择已删除的 `trellis` / `agent-orchestrator` Adapter，
-`plan-update` 应以 `SELECTION_CHANGED` 停止，不自动改成 `generic`。是否退出
-外部治理并重新采用 generic，必须由人类单独决定。
+为保证已发布 v4.1.x 客户能够由**旧执行器**规划主版本升级，v5 分发 Manifest
+暂时保留机器级 `components.adapters=["generic"]` 兼容桥；v5 执行器忽略它，
+它不是 Agent Context surface。
+
+v4 state 中的 `adapter=generic` 是已知历史 no-op：v5 执行器在下一次写回 state
+时将其规范化移除。任何其他历史 Adapter 值继续 fail closed，不得静默解释为
+generic。若当前任务已由外部交付工作流拥有，则按治理所有权规则
+`ABSTAINED`，不运行升级事务。
 
 ## 回滚
 
