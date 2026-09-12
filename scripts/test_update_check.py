@@ -448,12 +448,12 @@ class UpdateCheckContractTests(unittest.TestCase):
         self.assertIn("由用户选择", body)
         self.assertIn("plan-update", body)
 
-    def test_skill_has_no_automatic_apply(self) -> None:
+    def test_skill_has_no_update_side_task(self) -> None:
         body = (ROOT / "skills/themasterplan/SKILL.md").read_text(
             encoding="utf-8"
         )
-        self.assertIn("不得运行 `apply-update`", body)
-        self.assertNotIn("自动执行 apply-update", body)
+        self.assertNotIn("check-update", body)
+        self.assertNotIn("apply-update", body)
 
     def test_opencode_entries_do_not_copy_remote_logic(self) -> None:
         for path in (
@@ -463,12 +463,10 @@ class UpdateCheckContractTests(unittest.TestCase):
             body = path.read_text(encoding="utf-8")
             self.assertNotIn("api.github", body)
             self.assertNotIn("SemVer", body)
-            self.assertTrue(
-                "更新检测" in body or "update detection" in body,
-                f"{path} must reference the update detection step",
-            )
+            self.assertNotIn("check-update", body)
+            self.assertNotIn("update detection", body.lower())
 
-    def test_plan_adopt_accepts_only_generic_adapter(self) -> None:
+    def test_plan_adopt_has_no_adapter_surface(self) -> None:
         from themasterplan import build_parser
 
         common = [
@@ -482,12 +480,11 @@ class UpdateCheckContractTests(unittest.TestCase):
             "--output",
             "plan.json",
         ]
-        args = build_parser().parse_args(common + ["--adapter", "generic"])
-        self.assertEqual(args.adapter, "generic")
+        args = build_parser().parse_args(common)
+        self.assertFalse(hasattr(args, "adapter"))
 
-        for retired in ("trellis", "agent-orchestrator"):
-            with self.assertRaises(SystemExit):
-                build_parser().parse_args(common + ["--adapter", retired])
+        with self.assertRaises(SystemExit):
+            build_parser().parse_args(common + ["--adapter", "generic"])
 
     def test_actions_uses_and_policy_ref_update_together(self) -> None:
         body = (ROOT / "docs/client-update-flow.md").read_text(
