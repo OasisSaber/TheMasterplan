@@ -135,15 +135,6 @@ def detect_profile(project_root: Path) -> str:
     return "git"
 
 
-def detect_adapter(project_root: Path) -> str:
-    """Return the only supported thin Harness adapter.
-
-    External delivery workflows are handled by the Skill-level abstention
-    preflight, not by brand-specific adapter detection.
-    """
-    return "generic"
-
-
 def inspect(project_root: Path, target_version: str | None = None) -> dict:
     """Produce the inspect JSON result."""
     status, issues = detect_status(project_root, target_version)
@@ -153,6 +144,5 @@ def inspect(project_root: Path, target_version: str | None = None) -> dict:
         "git": (project_root / ".git").exists(),
         "jj": (project_root / ".jj").exists(),
         "detected_profile": detect_profile(project_root),
-        "detected_adapter": detect_adapter(project_root),
         "issues": issues,
     }
