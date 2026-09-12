@@ -39,17 +39,16 @@
 
 ## v5 变化
 
-v5 删除 Adapter 抽象：
+v5 删除运行时 Adapter 抽象：
 
 ```text
-selection.adapter
-components.adapters
+selection.adapter（新采用不再写入）
 adapters/generic.md
 --adapter CLI 参数
 detected_adapter
 ```
 
-都不再属于当前 schema / CLI surface。
+`distribution/manifest.json` 可暂时保留 `components.adapters=["generic"]` 作为 **v4 旧执行器升级兼容桥**。v5 的 CLI、文件选择和新 state 都忽略该字段；它不是当前 Agent/Harness surface。
 
 从 v4.x 更新时，旧 state 中：
 
