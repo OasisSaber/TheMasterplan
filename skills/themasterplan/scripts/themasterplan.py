@@ -59,7 +59,6 @@ def _cmd_plan_adopt(args: argparse.Namespace) -> int:
         root,
         source,
         profile=args.profile,
-        adapter=args.adapter,
         validation_path=args.validation_path,
         default_branch=args.default_branch,
         validation_path_exists=args.validation_path_exists,
@@ -176,11 +175,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--profile",
         required=True,
         choices=["git", "jj"],
-    )
-    plan_adopt_parser.add_argument(
-        "--adapter",
-        required=True,
-        choices=["generic"],
     )
     plan_adopt_parser.add_argument("--validation-path", required=True)
     plan_adopt_parser.add_argument("--default-branch", default="main")
