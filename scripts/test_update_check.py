@@ -440,13 +440,13 @@ class UpdateCheckStateTests(unittest.TestCase):
 class UpdateCheckContractTests(unittest.TestCase):
     """Static contract checks: Skill gates, thin loaders, compatibility."""
 
-    def test_skill_has_user_choice_gate(self) -> None:
-        body = (ROOT / "skills/themasterplan/SKILL.md").read_text(
+    def test_update_guide_has_user_choice_gate(self) -> None:
+        body = (ROOT / "docs/client-update-flow.md").read_text(
             encoding="utf-8"
         )
-        self.assertIn("更新检测", body)
-        self.assertIn("由用户选择", body)
+        self.assertIn("用户确认门", body)
         self.assertIn("plan-update", body)
+        self.assertIn("apply-update", body)
 
     def test_skill_has_no_update_side_task(self) -> None:
         body = (ROOT / "skills/themasterplan/SKILL.md").read_text(
