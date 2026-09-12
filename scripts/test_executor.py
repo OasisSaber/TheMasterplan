@@ -402,7 +402,7 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
                 self.root,
                 resolve_local(pkg, commit=TEST_COMMIT),
                 profile="git",
-                    validation_path="scripts/check.sh",
+                validation_path="scripts/check.sh",
             )
             plan_path = self.root / ".themasterplan-plan.json"
             write_json_atomic(plan_path, plan)
