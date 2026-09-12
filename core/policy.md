@@ -183,6 +183,8 @@
 - Agent 可以未经批准发布；
 - Agent 可以自动选择版本号并发布；
 - Agent 可以强推；
+- Agent 可以未经针对该历史的明确授权重写已 push 的任务历史（包括
+  restack/rebase 后移动已发布 change/bookmark）；
 - Agent 可以覆盖现有 tag；
 - Agent 可以删除 Release 或远端资源；
 - Agent 可以忽略验证失败；
