@@ -114,7 +114,7 @@ class ContextMinimalContractTests(unittest.TestCase):
 
     def test_state_doc_removes_adapter_from_v5_selection(self) -> None:
         body = STATE_DOC.read_text(encoding="utf-8")
-        self.assertIn("v5 删除 Adapter 抽象", body)
+        self.assertIn("v5 删除运行时 Adapter 抽象", body)
         example = body.split("## v5 变化", 1)[0]
         self.assertNotIn('"adapter"', example)
 
