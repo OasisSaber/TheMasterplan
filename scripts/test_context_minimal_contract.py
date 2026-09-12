@@ -33,7 +33,7 @@ DELETED = (
 
 
 class ContextMinimalContractTests(unittest.TestCase):
-    def test_manifest_is_v5_without_adapters(self) -> None:
+    def test_manifest_is_v5_without_adapter_files_or_runtime_surface(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         self.assertEqual(manifest["distribution_version"], "v5.0.0")
         self.assertEqual(
