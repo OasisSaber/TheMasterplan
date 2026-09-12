@@ -363,7 +363,13 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
         apply_adopt(self.root, plan_path, self._source())
         agents = self.root / "AGENTS.md"
         data = agents.read_bytes()
-        agents.write_bytes(data.replace(b"## \xe6\x9d\x83\xe5\xa8\x81\xe9\xa1\xba\xe5\xba\x8f", b"## \xe6\x9d\x83\xe5\xa8\x81\xe9\xa1\xba\xe5\xba\x8f\xef\xbc\x88\xe5\xb7\xb2\xe7\xaf\xa1\xe6\x94\xb9\xef\xbc\x89", 1))
+        agents.write_bytes(
+            data.replace(
+                b"This block is the project Context Router.",
+                b"This block is the modified Context Router.",
+                1,
+            )
+        )
         status, issues = detect_status(self.root, target_version=MANIFEST_VERSION)
         self.assertEqual(status, "MODIFIED", issues)
         report = verify(self.root)
