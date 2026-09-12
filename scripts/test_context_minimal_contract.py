@@ -36,14 +36,18 @@ class ContextMinimalContractTests(unittest.TestCase):
     def test_manifest_is_v5_without_adapters(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         self.assertEqual(manifest["distribution_version"], "v5.0.0")
-        self.assertNotIn("adapters", manifest.get("components", {}))
+        self.assertEqual(
+            manifest.get("components", {}).get("adapters"),
+            ["generic"],
+            "machine-only bridge keeps v4 executors able to plan the major update",
+        )
         destinations = {entry["destination"] for entry in manifest["files"]}
         self.assertFalse(any(path.startswith("adapters/") for path in destinations))
 
-    def test_schema_has_no_adapter_component(self) -> None:
+    def test_schema_marks_adapter_component_deprecated(self) -> None:
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
-        props = schema["properties"]["components"]["properties"]
-        self.assertNotIn("adapters", props)
+        adapter = schema["properties"]["components"]["properties"]["adapters"]
+        self.assertTrue(adapter.get("deprecated"))
 
     def test_deleted_context_duplicates_are_absent(self) -> None:
         self.assertEqual([str(path) for path in DELETED if path.exists()], [])
