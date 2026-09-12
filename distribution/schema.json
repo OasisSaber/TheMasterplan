@@ -36,12 +36,6 @@
           "items": {
             "type": "string"
           }
-        },
-        "adapters": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         }
       }
     },
