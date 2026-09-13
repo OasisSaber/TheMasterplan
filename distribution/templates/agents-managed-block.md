@@ -7,8 +7,10 @@ This block is the project Context Router. Load guidance only when the task needs
 - authorization / merge / release / destructive remote action: `core/policy.md`
 - Git release/tag: `profiles/git.md`
 - Jujutsu release/tag: `profiles/jj.md`
+- Jujutsu daily change/bookmark commands: `skills/themasterplan/references/jj-lifecycle.md`
 - adoption/update: `docs/client-update-flow.md`
-- external delivery owner: `docs/external-workflow-abstention.md`
+
+External delivery ownership is defined in `core/workflow.md` §0; do not add a separate orchestrator compatibility layer.
 
 Do not preload the whole rule stack.
 
