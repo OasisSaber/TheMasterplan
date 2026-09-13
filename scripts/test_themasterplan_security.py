@@ -42,8 +42,8 @@ def copy_package() -> Path:
         "distribution",
         "core",
         "profiles",
-        "adapters",
         "skills/themasterplan",
+        "docs/client-update-flow.md",
     ):
         source = REPO_ROOT / relative
         if not source.exists():
@@ -261,6 +261,7 @@ class UpdateSafetyTest(unittest.TestCase):
         state = json.loads(
             (self.project / ".themasterplan" / "state.json").read_text(encoding="utf-8")
         )
+        self.assertNotIn("adapter", state["selection"])
         self.assertIn(".themasterplan/bin/tmlib/source.py", state["managed_files"])
 
         installed_source = self.project / ".themasterplan" / "bin" / "tmlib" / "source.py"
