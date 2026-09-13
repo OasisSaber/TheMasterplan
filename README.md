@@ -1,123 +1,75 @@
 # TheMasterplan
 
-A minimal AI-assisted workflow with a single delivery owner for GitHub and Jujutsu.
+> Context-minimal AI-assisted delivery governance for GitHub and Jujutsu.
 
-TheMasterplan 是面向个人开发者的“单一交付责任人的 AI 辅助代码交付治理协议”（GitHub Flow + Jujutsu 适配），并提供集中维护、版本化发布的 GitHub Actions 可重用工作流接口。
+TheMasterplan 是一个面向代码仓库的轻量交付治理协议：让 **一个主交付责任人**
+控制最终范围、VCS、验证、Pull Request 与发布交接，同时让 Agent 只加载当前任务
+真正需要的上下文。
 
-它不是 Agent 服务、多 Agent 编排平台、Web 或 API 服务、CLI 产品、Agent 运行时、自动发布机器人、项目管理系统；不自动 merge 或 release。允许研究/实现/检查子代理与多个模型参与，但只能有一个主交付责任人控制任务最终范围、VCS、最终验证、push、Pull Request、发布授权执行与人类交接。
+它不是 Agent 运行时、编排平台、项目管理系统或自动发布机器人。研究、实现和检查
+可以由多个模型或子代理参与，但最终交付仍由一个责任人收敛。
 
-## 稳定接口
+**Agent 从 [AGENTS.md](AGENTS.md) 开始。人类从本文或
+[采用指南](docs/adoption-guide.md) 开始。**
 
-| 用途 | 入口 |
-| --- | --- |
-| Agent 入口 | [AGENTS.md](AGENTS.md) |
-| 人类入口 | [README.md](README.md) |
-| 维护入口 | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| 采用指南 | [docs/adoption-guide.md](docs/adoption-guide.md) |
-| 外部工作流共存边界 | [docs/external-workflow-abstention.md](docs/external-workflow-abstention.md) |
-| 更新检测与升级流程 | [docs/client-update-flow.md](docs/client-update-flow.md) |
-| 完整任务生命周期 | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| 验证入口 | `bash scripts/check.sh` |
-| Actions 接口 | [docs/actions-interface.md](docs/actions-interface.md) |
-| 版本通道 | [docs/release-channels.md](docs/release-channels.md) |
-| 复制接口 | GitHub Template Repository |
-| 版本接口 | Git tag / GitHub Release |
+## 为什么是 Context-Minimal
 
-## 支持与验证状态
+TheMasterplan v5 的设计方向参考了 OpenAI 的
+[Rethinking skills and prompts for GPT-6 Astra](https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra)：
+更强的编码 Agent 不再需要把完整规则栈、仓库地图和操作食谱预先塞进上下文。
+更有效的做法是让入口保持短小、按任务渐进披露资料，并把真正需要人类判断的边界
+与可以安全继续的工作区分开。
 
-- `VERIFIED`：Ubuntu GitHub Actions 中的 Bash 权威入口，以及 PowerShell 7 委托同一 Bash 入口的路径。
-- `PARTIAL`：macOS Bash 与真实 Windows PowerShell 7 + Git for Windows 环境；仓库提供入口和采用烟雾测试，但当前 CI 不在这些原生平台运行。
+在 TheMasterplan 中，这被落实为五个原则：
 
-外部交付工作流共存采用**主动退让**而不是持续适配：普通 OpenCode/Codex 等
-执行 Harness 可以直接使用 TheMasterplan；一旦另一个系统已经拥有当前任务的
-worker/session、workspace、PR/CI-review 或发布生命周期，本任务状态为
-`ABSTAINED`，TheMasterplan 不再施加自己的任务工作流，也不维护该系统的专用
-兼容层。边界见 [docs/external-workflow-abstention.md](docs/external-workflow-abstention.md)。
-- Jujutsu：本文档命令已使用 `0.43.0` 核对；更高版本不是自动验证范围，采用时必须重新运行烟雾测试。
-- Git：文档假设 `2.34.0` 或更高版本。
-- 示例默认远端为 `origin`、受保护分支为 `main`。
+- **Minimal router**：`AGENTS.md` 和 Skill 只负责告诉 Agent 什么时候读什么。
+- **Progressive disclosure**：普通实现不预读 Release、Update、Policy 或无关 VCS 文档。
+- **Completion contract**：实现、相关验证、修复和最终 diff 审阅完成前，不因“已有第一版”提前停下。
+- **Decision boundaries**：只有范围扩大、发布、破坏性远端操作、安全风险等真实边界才需要停下。
+- **Mechanical contracts**：能由模板、脚本和 CI 机械验证的规则，不重复塞进 Prompt。
 
-## 采用方式
+因此，TheMasterplan 的目标不是教模型“每一步怎么想”，而是给它足够的项目事实、
+路由信息和交付边界。
 
-### 完整模板
+## 工作模型
 
-推荐通过 GitHub Template Repository 创建新仓库。完整模板的最小维护集合包括根部 `AGENTS.md`、`CONTRIBUTING.md`、`.github/`、`scripts/` 与 `docs/`；这些文件共同提供任务规则、Pull Request/Issue 入口、验证命令和采用说明。
-
-### 仅采用通用规则
-
-可以只摘取根部 `AGENTS.md`，但它不是无需修改即可独立运行的配置文件。采用者必须先替换“项目事实”和验证命令，并删除或替换没有一并复制的仓库内链接与 PowerShell 入口。不得把不存在的 `scripts/check.sh` 或支持文档继续声明为有效入口。
-
-### 最小采用集合（含薄 Skill）
-
-v5 的最小采用集合为：根部 `AGENTS.md`、`core/`、选定的 VCS Profile/
-参考文件，以及 [skills/themasterplan](skills/themasterplan/SKILL.md)。
-
-Skill 只是最小 Context Router，不复制完整工作流，也不在普通任务开始时自动
-预读 Policy、Release、Update 或 VCS 文档。Agent 先读取 `AGENTS.md`，再按
-Context Router 只加载当前任务需要的材料。仅复制 Skill 仍不构成完整采用。
-
-采用者须填写项目事实、配置真实验证命令与 GitHub 保护，并按
-[采用指南](docs/adoption-guide.md)完成烟雾测试。更新检测只在明确的
-update/adopt/maintenance 意图下按
-[client-update-flow.md](docs/client-update-flow.md)执行。
-
-所有采用方式都应按[采用指南](docs/adoption-guide.md)记录实际使用的 Release tag 或 commit SHA，而不是默认写入固定版本号。
-
-## 快速开始
-
-1. 使用 GitHub Template Repository 创建完整模板仓库；若只采用 `AGENTS.md`，先按上面的“仅采用通用规则”边界完成定制。
-2. 在本地初始化 Jujutsu 工作区；二选一：
-
-   ```bash
-   # 路径 A：直接使用 Jujutsu 克隆
-   jj git clone <repository-url>
-   cd <repository>
-   ```
-
-   ```bash
-   # 路径 B：仓库已通过 Git 克隆
-   git clone <repository-url>
-   cd <repository>
-   jj git init --colocate
-   ```
-
-   初始化后运行：
-
-   ```bash
-   jj --version
-   git --version
-   jj status
-   jj git remote list
-   jj log -r 'main | main@origin' -n 5
-   ```
-
-3. 在 `AGENTS.md` 的“项目事实”中填写项目目标、技术栈、验证命令和默认分支。
-4. 按项目需要替换验证脚本和持续集成配置，并按 [仓库设置说明](docs/repository-settings.md) 由人类配置 GitHub 保护规则。
-5. 开始新任务前运行 `jj git fetch` 同步远端基线；初始化后才能使用本工作流规定的 `jj status`、`jj new` 和 bookmark 命令。
-6. 复杂任务使用[复杂任务 Issue form](.github/ISSUE_TEMPLATE/complex-task.yml)记录边界；小型低风险任务仍使用当前会话中的明确人类授权。
-7. 使用一个 jj change 完成实现、验证与 Agent 自审，通过 Pull Request 交给人类决定是否 Squash Merge；微小修复可走快速通道（[core/workflow.md](core/workflow.md) §1）直接合并。
-
-从同步、创建 change、跟踪与 push bookmark、更新 Pull Request，到人工 Squash Merge 后清理的完整命令见 [CONTRIBUTING.md](CONTRIBUTING.md)。遇到 `main`、`main@origin` 或任务 bookmark 冲突时停止，不要强推或猜测目标。
-
-## 本仓库验证
-
-```bash
-bash scripts/check.sh
+```text
+task
+  ↓
+AGENTS.md
+  ↓
+Context Router
+  ↓
+只加载当前任务需要的 workflow / policy / VCS / update 文档
+  ↓
+实现 → 相关验证 → 修复失败 → 最终 diff
+  ↓
+Pull Request / 已授权的微小修复快速通道
+  ↓
+人类决定 merge / release
 ```
 
-PowerShell 7 可使用委托同一 Bash 权威入口的等价命令：
+如果另一个系统已经拥有当前任务的 worker/session、workspace、PR/CI-review 或
+release 生命周期，TheMasterplan 进入 `ABSTAINED`，不与外部工作流竞争治理权。
+完整边界见
+[docs/external-workflow-abstention.md](docs/external-workflow-abstention.md)。
 
-```powershell
-pwsh -NoProfile -File scripts/check.ps1
-```
+## 快速采用
 
-当前 GitHub Actions 在 Ubuntu 上同时运行上述 Bash 和 PowerShell 委托入口。真实 Windows 与 macOS 支持状态为 `PARTIAL`，采用者必须在目标平台完成[新仓库烟雾测试](docs/adoption-guide.md#新仓库烟雾测试)后再声明为已验证。
+推荐两种方式：
 
-验证入口检查 Python 语法、Pull Request 正文校验器单元测试，以及 Markdown 内部链接、Shell 脚本提交模式、YAML 语法和 Shell 语法。依赖说明见 [scripts/README.md](scripts/README.md)。
+### 1. GitHub Template Repository
 
-## 中央 Actions 接口
+用本仓库作为模板创建新项目，然后：
 
-业务仓库通过可重用工作流调用中央治理检查，不再复制 TheMasterplan 的 CI 实现：
+1. 在 `AGENTS.md` 填写项目事实、默认分支和真实验证入口；
+2. 保留项目自己的 `scripts/check.sh`；
+3. 选择 Git 或 Jujutsu Profile；
+4. 按 [采用指南](docs/adoption-guide.md) 完成 smoke test。
+
+### 2. 现有仓库接入中央 Actions
+
+业务仓库保留自己的验证逻辑，只调用 TheMasterplan 的中央治理工作流：
 
 ```yaml
 jobs:
@@ -131,28 +83,102 @@ jobs:
       project-check-path: scripts/check.sh
 ```
 
-v1 兼容线消费者继续使用 `aw-check.yml@v1`（`policy-ref` 保持默认 `v1`），
-见 [docs/release-channels.md](docs/release-channels.md)。
+业务仓库负责自己的依赖安装、lint、typecheck、test、build 与项目专属安全检查；
+TheMasterplan 负责公共治理契约、PR 合规检查和调用边界。
 
-TheMasterplan 负责工作流治理、PR 合规检查、安全基线与调用约束；业务仓库负责自己的
-依赖安装、lint、typecheck、test、build 等专属验证，并通过项目内
-`scripts/check.sh` 暴露。接口契约见
-[docs/actions-interface.md](docs/actions-interface.md)，版本通道见
-[docs/release-channels.md](docs/release-channels.md)。
+接口细节见 [docs/actions-interface.md](docs/actions-interface.md)。
 
-## 维护边界
+## 只在需要时读取
 
-日常采用本工作流时，不在本仓库为业务项目创建 Issue。只有修改 TheMasterplan 工作流本身时，才在本仓库记录维护任务。
+| 需要处理的事情 | 权威入口 |
+| --- | --- |
+| 普通实现、修复、文档、测试、PR | [core/workflow.md](core/workflow.md) |
+| 授权、merge、release、破坏性远端操作 | [core/policy.md](core/policy.md) |
+| Git 发布 / Tag | [profiles/git.md](profiles/git.md) |
+| Jujutsu 发布 / Tag | [profiles/jj.md](profiles/jj.md) |
+| Jujutsu 日常 change / bookmark | [jj-lifecycle.md](skills/themasterplan/references/jj-lifecycle.md) |
+| adoption / update / check-update | [client-update-flow.md](docs/client-update-flow.md) |
+| GitHub Actions 接口 | [actions-interface.md](docs/actions-interface.md) |
+| Release 与版本通道 | [release-channels.md](docs/release-channels.md) |
+| 新项目采用 | [adoption-guide.md](docs/adoption-guide.md) |
+| 维护 TheMasterplan 本身 | [CONTRIBUTING.md](CONTRIBUTING.md) |
 
-Agent 可以在已记录范围内实现、验证、push 和维护 Pull Request，但未经人类批准不得 merge 或 release；发布事务的聚合授权语义见 [core/policy.md](core/policy.md)。
+这些文档不是普通任务的默认预读清单。按任务需要加载即可。
+
+## 一个任务如何结束
+
+在已授权范围内，Agent 应持续工作直到：
+
+1. 请求结果已经实现；
+2. 与本次改动相关的验证通过；
+3. 本次改动造成的失败已修复并复验；
+4. 最终 diff 已审阅；
+5. 或真正的人类决策边界出现。
+
+安全的本地读取、编辑、格式化、lint、测试、修复本次改动造成的失败和重跑相关
+验证，不需要逐步请求批准。
+
+复杂任务通常通过 Issue → change/branch → Pull Request → 人类决定 Squash Merge
+交付。目标清晰且满足严格低风险条件的极小修复，可按
+[core/workflow.md](core/workflow.md) 的快速通道执行。
+
+## 验证
+
+本仓库权威验证入口：
+
+```bash
+bash scripts/check.sh
+```
+
+PowerShell 7 可委托同一 Bash 入口：
+
+```powershell
+pwsh -NoProfile -File scripts/check.ps1
+```
+
+当前支持状态：
+
+- **VERIFIED**：Ubuntu GitHub Actions 中的 Bash 入口，以及 PowerShell 7 委托路径。
+- **PARTIAL**：macOS Bash、真实 Windows PowerShell 7 + Git for Windows；采用时应重新完成 smoke test。
+- Git 文档基线：`2.34.0+`。
+- Jujutsu 文档命令已按 `0.43.0` 核对；更高版本采用时应重新 smoke。
+
+验证内容和依赖见 [scripts/README.md](scripts/README.md)。
+
+## 更新与版本
+
+当前稳定 Release：**v5.0.0**。
+
+普通 `/TheMasterplan` 任务不会自动检查更新。只有明确的 update、adopt、
+maintenance 或版本检查意图才加载更新流程并执行只读检查。
+
+版本通道：
+
+- `v5.0.0`：当前稳定不可变 Release tag；
+- `v1`：冻结兼容线，不再推进；
+- 完整 commit SHA：最高可复现性。
+
+完整规则见 [docs/release-channels.md](docs/release-channels.md) 和
+[docs/client-update-flow.md](docs/client-update-flow.md)。
+
+## 非目标
+
+TheMasterplan 不试图成为：
+
+- 多 Agent 编排器；
+- Agent runtime 或常驻服务；
+- 自动 merge / release / deploy 机器人；
+- 外部 orchestrator 的兼容矩阵；
+- 业务项目自己的测试、构建或部署系统。
+
+它只解决一个问题：**在 Agent 已经足够能干的前提下，用尽可能少的长期上下文，
+保持交付责任、验证和人类决策边界清晰。**
 
 ## 来源
 
 TheMasterplan 整理自
 [OasisSaber/agentic-project-workflow](https://github.com/OasisSaber/agentic-project-workflow)
-的最终接受基线。
-
-历史研发记录保留在旧仓库。
+的最终接受基线。历史研发记录保留在旧仓库。
 
 基线提交：`ee0482d08ea6859bef2d1c06f37fa97bb25a575f`
 
