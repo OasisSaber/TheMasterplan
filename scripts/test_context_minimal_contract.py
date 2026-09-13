@@ -21,6 +21,7 @@ SKILL = ROOT / "skills/themasterplan/SKILL.md"
 OPENCODE_SKILL = ROOT / ".opencode/skills/themasterplan/SKILL.md"
 OPENCODE_COMMAND = ROOT / ".opencode/commands/themasterplan.md"
 MANIFEST = ROOT / "distribution/manifest.json"
+MANAGED_BLOCK = ROOT / "distribution/templates/agents-managed-block.md"
 STATE_DOC = ROOT / "docs/themasterplan-state-format.md"
 
 DELETED = (
@@ -36,6 +37,18 @@ class ContextMinimalContractTests(unittest.TestCase):
         self.assertNotIn("adapters", manifest.get("components", {}))
         destinations = {entry["destination"] for entry in manifest["files"]}
         self.assertFalse(any(path.startswith("adapters/") for path in destinations))
+
+    def test_consumer_router_on_demand_targets_are_installable(self) -> None:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        destinations = {entry["destination"] for entry in manifest["files"]}
+        self.assertIn("docs/client-update-flow.md", destinations)
+        self.assertIn(
+            "skills/themasterplan/references/jj-lifecycle.md",
+            destinations,
+        )
+        block = MANAGED_BLOCK.read_text(encoding="utf-8")
+        self.assertIn("profiles/<profile>.md", block)
+        self.assertNotIn("docs/external-workflow-abstention.md", block)
 
     def test_deleted_context_duplicates_are_absent(self) -> None:
         self.assertEqual([str(path) for path in DELETED if path.exists()], [])
