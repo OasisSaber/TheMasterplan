@@ -5,8 +5,8 @@ This block is the project Context Router. Load guidance only when the task needs
 
 - routine delivery and external-ownership decisions: `core/workflow.md`
 - authorization / merge / release / destructive remote action: `core/policy.md`
-- Git release/tag: `profiles/git.md`
-- Jujutsu release/tag: `profiles/jj.md`
+- VCS release/tag: load the selected installed profile under `profiles/`
+  (the adopted project contains only its selected profile)
 - adoption/update maintenance: use the installed `.themasterplan/bin/themasterplan.py`
   commands; consult upstream adoption/update docs only for that maintenance task
 
