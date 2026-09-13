@@ -1,54 +1,70 @@
 # Validation
 
-`scripts/check.sh` 是本仓库本地与 CI 共用的权威验证入口。它依次执行：
+`scripts/check.sh` 是本仓库本地与 CI 共用的权威验证入口。它执行：
 
-1. 所有受跟踪 Python 验证脚本的语法检查；
-2. Pull Request 正文与 Markdown 链接校验器单元测试；
-3. `scripts/validate.sh` 中的四项技术检查：Markdown 内部链接、Shell 脚本提交模式、YAML 语法和 Shell 语法。
+1. 受跟踪 Python 脚本语法检查；
+2. `scripts/test_*.py` 单元/临时仓库集成测试；
+3. `scripts/validate.sh` 的 Markdown 链接、Shell 提交模式、YAML 与 Shell 语法检查。
 
-`validate_pr_body.py` 仅使用 Python 标准库校验 Pull Request 正文的固定模板字段；`validate_markdown_links.py` 校验仓库内 Markdown 文件、图片与受支持的标题锚点。CI 仅在 Pull Request 事件中对实时正文单独运行前者。运行环境需要 Bash、Git、Python 和 PyYAML。持续集成使用 Python 3.12.7 与 PyYAML 6.0.3。
-
-## 支持状态
-
-- `VERIFIED`：当前 Ubuntu GitHub Actions 中直接运行 `scripts/check.sh`（经中央 reusable workflow `themasterplan-check.yml`，check-run 名称 `themasterplan-check / check`）。
-- `PARTIAL`：真实 Windows PowerShell 7 + Git for Windows 与 macOS Bash。仓库提供入口，但当前 CI 不在这些原生平台运行；采用者必须在目标平台完成烟雾测试。
-- Windows PowerShell 5.1 不在支持范围内。
-
-本地安装固定的验证依赖：
+运行环境需要 Bash、Git、Python 和 PyYAML。持续集成当前使用固定 Python/PyYAML 环境；本地按 `scripts/requirements.txt` 安装验证依赖。
 
 ```bash
 python -m pip install --disable-pip-version-check -r scripts/requirements.txt
-```
-
-```bash
 bash scripts/check.sh
 ```
 
-PowerShell 7 入口不复制验证规则，而是定位兼容 Bash 后委托权威入口：
+PowerShell 7 入口不复制验证规则，而是委托同一 Bash 权威入口：
 
 ```powershell
 pwsh -NoProfile -File scripts/check.ps1
 ```
 
-Windows 优先使用 Git for Windows 自带的 Bash；其他平台从 `PATH` 定位 `bash`。缺少 Bash、Git、Python 或 PyYAML 时，验证会明确失败。入口存在不等于真实 Windows 或 macOS 已由上游 CI 验证。
+Windows 优先使用 Git for Windows 自带 Bash；其他平台从 `PATH` 定位 `bash`。
 
-维护 CI 时，从官方发布标签核对 Action 后固定完整提交 SHA，并保留可读版本注释；验证依赖只在审阅版本后更新 `scripts/requirements.txt`。
+## v5 Context-Minimal 契约
+
+`scripts/test_context_minimal_contract.py` 机械验证：
+
+- Manifest 为 v5 且没有 Adapter component/file；
+- `plan-adopt` 不再暴露 `--adapter`；
+- `inspect` 不再暴露 `detected_adapter`；
+- `AGENTS.md` 是 Context Router，包含 Completion Contract，不再有全栈加载顺序；
+- canonical Skill、OpenCode Skill/Command 保持极薄，不复制 update/PR 机械契约；
+- `core/workflow.md` 是 ABSTAINED、默认继续与真实停止边界的权威来源。
+
+`scripts/test_v5_adapter_migration.py` 验证 v4.x → v5 的 breaking-schema 迁移：
+
+- 历史 `adapter=generic` 被规范化移除；
+- 未修改的受管 `adapters/generic.md` 安全按 `REMOVED_UPSTREAM` 删除；
+- 本地修改过的旧 Adapter 文件 fail closed，不被覆盖/删除；
+- 未知历史 Adapter selection fail closed。
+
+这些测试验证机械边界，不把整套规则重新复制进 Prompt。
 
 ## 消费者契约
 
-`scripts/validate_consumer.py` 机械验证中央 Actions 接口调用方的最小采用契约：
-仓库根目录存在、根部 `AGENTS.md` 存在、`project-check-path` 为不含反斜杠与
-`..` 的 POSIX 相对路径、目标是受 Git 跟踪的普通文件且不是符号链接。契约定义
-见 [docs/actions-interface.md](../docs/actions-interface.md)。
+`scripts/validate_consumer.py` 机械验证中央 Actions 调用方的最小契约：根部 `AGENTS.md` 存在，`project-check-path` 是安全 POSIX 相对路径、受 Git 跟踪的普通文件且不是符号链接。
 
 ```bash
 python scripts/validate_consumer.py <repository-root> <project-check-path>
 ```
 
+完整接口定义见 [docs/actions-interface.md](../docs/actions-interface.md)。
+
+## PR 正文契约
+
+`scripts/validate_pr_body.py` 与 `.github/pull_request_template.md` 是 PR 正文机械契约的单一事实来源。v5 Skill/AGENTS 不再复制字段清单。
+
+CI 仅在 Pull Request 事件中对实时正文运行 PR validator。
+
 ## Actions 契约
 
-`scripts/test_actions_contract.py` 机械验证中央 reusable workflow
-`.github/workflows/themasterplan-check.yml`：`workflow_call` 触发、Job 名称为 `check`、
-只读权限、无 `pull_request_target` 与 Secrets、第三方 Action 固定完整 SHA、
-默认输入、超时上限与检出路径。契约定义见
-[docs/actions-interface.md](../docs/actions-interface.md)。
+`scripts/test_actions_contract.py` 验证 `.github/workflows/themasterplan-check.yml` 的 `workflow_call`、稳定 Job 名称、只读权限、无 `pull_request_target`/Secrets、第三方 Action 完整 SHA、默认输入、超时与 checkout 路径。
+
+## 支持状态
+
+- `VERIFIED`：当前 Ubuntu GitHub Actions 的 Bash 权威入口和 PowerShell 7 委托路径。
+- `PARTIAL`：真实 Windows PowerShell 7 + Git for Windows 与 macOS Bash；采用项目应在目标平台运行 smoke。
+- Windows PowerShell 5.1 不在支持范围。
+
+入口存在不等于上游已经验证所有原生平台。
