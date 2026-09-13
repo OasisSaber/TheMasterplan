@@ -41,9 +41,9 @@ MANIFEST_VERSION = load_manifest(
 
 
 def make_package_copy() -> Path:
-    """Copy distribution/core/profiles/adapters/skills into a temp dir; returns root."""
-    tmp = Path(tempfile.mkdtemp(prefix="aw-pkg-"))
-    for sub in ("distribution", "core", "profiles", "adapters", "skills"):
+    """Copy distribution/core/profiles/skills into a temp dir; returns root."""
+    tmp = Path(tempfile.mkdtemp(prefix="tml-pkg-"))
+    for sub in ("distribution", "core", "profiles", "skills"):
         shutil.copytree(
             PACKAGE_ROOT / sub,
             tmp / sub,
@@ -54,13 +54,12 @@ def make_package_copy() -> Path:
 
 def make_tar_gz(package_root: Path) -> bytes:
     """Create a GitHub-style single-top-dir tar.gz archive of a package."""
-    buf = io_bytes = None
     import io
 
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w:gz") as tf:
         base = Path("repo-vX")
-        for sub in ("distribution", "core", "profiles", "adapters"):
+        for sub in ("distribution", "core", "profiles"):
             for path in sorted((package_root / sub).rglob("*")):
                 if path.is_file():
                     rel = base / sub / path.relative_to(package_root / sub)
@@ -81,7 +80,7 @@ class HttpServerTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.tmp = Path(tempfile.mkdtemp(prefix="aw-http-"))
+        cls.tmp = Path(tempfile.mkdtemp(prefix="tml-http-"))
         cls.archive = cls.tmp / "archive.tar.gz"
         cls.archive.write_bytes(make_tar_gz(PACKAGE_ROOT))
         handler = lambda *a, **kw: QuietHandler(*a, directory=str(cls.tmp), **kw)  # noqa: E731
@@ -166,7 +165,6 @@ class UpdateFlowTest(unittest.TestCase):
             self.root,
             resolve_local(package_root, commit=TEST_COMMIT),
             profile="git",
-            adapter="generic",
             validation_path="scripts/check.sh",
         )
         plan_path = self.root / ".themasterplan-plan.json"
@@ -218,7 +216,7 @@ class UpdateFlowTest(unittest.TestCase):
     def test_plan_update_add_and_removed(self) -> None:
         state = self._adopt(PACKAGE_ROOT)
         pkg2 = make_package_copy()
-        # Add a new file to the manifest and drop the adapters/generic.md entry.
+        # Add a new file and remove the selected Git profile upstream.
         manifest_path = pkg2 / "distribution" / "manifest.json"
         manifest = load_manifest(manifest_path)
         manifest["files"].append(
@@ -230,7 +228,7 @@ class UpdateFlowTest(unittest.TestCase):
             }
         )
         manifest["files"] = [
-            e for e in manifest["files"] if e["destination"] != "adapters/generic.md"
+            e for e in manifest["files"] if e["destination"] != "profiles/git.md"
         ]
         write_json_atomic(manifest_path, manifest)
         (pkg2 / "core" / "extra.md").write_bytes(b"extra\n")
@@ -239,22 +237,44 @@ class UpdateFlowTest(unittest.TestCase):
         self.assertIn("ADD", classes)
         self.assertIn("REMOVED_UPSTREAM", classes)
         self.assertFalse(plan["stop_conditions"], plan["stop_conditions"])
-        # Apply: extra added, adapters/generic.md removed (hash unchanged).
+        # Apply: extra added, profiles/git.md removed (hash unchanged).
         plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
         result = apply_update(self.root, plan_path, resolve_local(pkg2, commit="d" * 40))
         self.assertIn("core/extra.md", result["written"])
-        self.assertIn("adapters/generic.md", result["removed"])
-        self.assertFalse((self.root / "adapters/generic.md").exists())
+        self.assertIn("profiles/git.md", result["removed"])
+        self.assertFalse((self.root / "profiles/git.md").exists())
 
     def test_plan_update_selection_changed(self) -> None:
         state = self._adopt(PACKAGE_ROOT)
         pkg2 = make_package_copy()
         manifest_path = pkg2 / "distribution" / "manifest.json"
         manifest = load_manifest(manifest_path)
-        manifest["components"] = {"profiles": ["jj"], "adapters": ["trellis"]}
+        manifest["components"] = {"profiles": ["jj"]}
         write_json_atomic(manifest_path, manifest)
         plan = plan_update(self.root, resolve_local(pkg2, commit="e" * 40), state)
+        self.assertTrue(plan["stop_conditions"])
+        self.assertIn("selection no longer supported", plan["stop_conditions"][0])
+
+    def test_v4_generic_adapter_is_migrated_out(self) -> None:
+        state = self._adopt(PACKAGE_ROOT)
+        state["selection"]["adapter"] = "generic"
+        plan = plan_update(
+            self.root,
+            resolve_local(PACKAGE_ROOT, commit=TEST_COMMIT),
+            state,
+        )
+        self.assertFalse(plan["stop_conditions"], plan["stop_conditions"])
+        self.assertNotIn("adapter", plan["selection"])
+
+    def test_unknown_legacy_adapter_fails_closed(self) -> None:
+        state = self._adopt(PACKAGE_ROOT)
+        state["selection"]["adapter"] = "unknown-orchestrator"
+        plan = plan_update(
+            self.root,
+            resolve_local(PACKAGE_ROOT, commit=TEST_COMMIT),
+            state,
+        )
         self.assertTrue(plan["stop_conditions"])
         self.assertIn("selection no longer supported", plan["stop_conditions"][0])
 
@@ -282,7 +302,6 @@ class DoctorTest(unittest.TestCase):
             self.root,
             resolve_local(PACKAGE_ROOT, commit=TEST_COMMIT),
             profile="git",
-            adapter="generic",
             validation_path="scripts/check.sh",
         )
         plan_path = self.root / ".themasterplan-plan.json"
@@ -301,7 +320,6 @@ class DoctorTest(unittest.TestCase):
             self.root,
             resolve_local(PACKAGE_ROOT, commit=TEST_COMMIT),
             profile="git",
-            adapter="generic",
             validation_path="scripts/check.sh",
         )
         plan_path = self.root / ".themasterplan-plan.json"
