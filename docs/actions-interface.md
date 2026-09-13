@@ -1,7 +1,6 @@
 # GitHub Actions 中央接口
 
-TheMasterplan 提供集中维护、版本化发布的 GitHub Actions 可重用工作流。
-业务仓库通过 `uses` 调用，不再复制中央 CI 实现。
+TheMasterplan 提供集中维护、版本化发布的 GitHub Actions 可重用工作流。业务仓库通过 `uses` 调用，不复制中央 CI 实现。
 
 ## 工作流路径
 
@@ -11,36 +10,30 @@ v1 兼容线（冻结，`policy-ref` 默认 `v1`）：
 uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1
 ```
 
-当前版（v4.1.0，tag-only 精确固定）：
+当前版（v5.0.0，tag-only 精确固定）：
 
 ```yaml
-uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v4.1.0
+uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v5.0.0
 with:
-  policy-ref: v4.1.0
+  policy-ref: v5.0.0
 ```
 
-`aw-check.yml` 在 v1 兼容线生命周期内不得移动或重命名。工作流路径移动属
-公共 API 变更，只能在下一主版本执行；v4.0.0 已随改名
-（aw-check.yml → themasterplan-check.yml）执行。
+`aw-check.yml` 在 v1 兼容线生命周期内不得移动或重命名。当前版工作流路径是 `themasterplan-check.yml`；已发布路径与 Tag 不移动。
 
 ## 输入
 
-第一版只允许以下 `workflow_call` 输入：
+只允许以下 `workflow_call` 输入：
 
 | 输入 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
 | `project-check-path` | string | `scripts/check.sh` | 调用项目权威验证入口 |
 | `policy-ref` | string | `v1` | TheMasterplan 策略脚本版本 |
 
-不得加入任意 `setup-command`、`check-command`、Shell 表达式、Secret 输入、
-发布或部署参数、自动合并参数或写权限开关。
+不得加入任意 `setup-command`、`check-command`、Shell 表达式、Secret 输入、发布或部署参数、自动合并参数或写权限开关。
 
-固定版本调用时 `policy-ref` 必须等于 `uses` 引用版本（v4.1.0 通道必须
-显式指定 `policy-ref: v4.1.0`），见 [release-channels.md](release-channels.md)。
+固定当前版调用时 `policy-ref` 必须等于 `uses` 引用版本；v5.0.0 通道显式指定 `policy-ref: v5.0.0`。v1 冻结兼容线保持独立路径和默认 `policy-ref: v1`。
 
 ## 固定行为
-
-第一版固定：
 
 - Runner：`ubuntu-latest`
 - 权限：`contents: read`
@@ -56,7 +49,7 @@ with:
 
 ```text
 业务仓库 .github/workflows/check.yml
-        │ uses @v1（aw-check.yml）或 @v4.1.0（themasterplan-check.yml）
+        │ uses @v1（aw-check.yml）或 @v5.0.0（themasterplan-check.yml）
         ▼
 TheMasterplan reusable workflow
         │
@@ -64,22 +57,21 @@ TheMasterplan reusable workflow
         ├── 检出 TheMasterplan 策略实现
         ├── 验证 TheMasterplan 采用契约
         ├── 验证 Pull Request 正文
-        ├── 运行调用方 scripts/check.sh
+        ├── 运行调用方 project-check-path
         └── 输出稳定状态检查
 ```
 
-TheMasterplan 仓库自身通过相对路径调用当前提交内的 reusable workflow，确保 TheMasterplan 的 PR
-测试当前 PR 中的策略实现而不是远端旧版本。
+TheMasterplan 仓库自身通过相对路径调用当前提交内的 reusable workflow，确保 PR 测试当前 PR 中的策略实现而不是远端旧版本。
 
 ## 职责边界
 
-TheMasterplan 决定如何触发、如何验证采用契约、如何检查 PR 合规性、如何限制权限、如何
-报告结果以及如何管理中央工作流版本；业务仓库决定安装哪些依赖、运行哪些测试、
-如何构建以及如何执行项目专属安全检查。
+TheMasterplan 决定触发、采用契约、PR 合规、安全权限和中央工作流版本；业务仓库决定依赖、lint、typecheck、test、build 与项目专属安全检查。
+
+v5 的 Context-Minimal Reform 不改变这个 Actions 公共接口。Prompt/Skill 的 progressive disclosure 与 CI 机械契约是两层独立机制。
 
 ## PR 契约
 
-继续复用 `scripts/validate_pr_body.py` 与 `.github/pull_request_template.md`：
+继续以 `scripts/validate_pr_body.py` 与 `.github/pull_request_template.md` 为机械单一事实来源：
 
 - Issue 与明确人类授权二选一；
 - Issue 使用单个关闭引用；
@@ -87,7 +79,9 @@ TheMasterplan 决定如何触发、如何验证采用契约、如何检查 PR �
 - `Result`、`Changes`、`Verification` 不为空；
 - 五项 Agent 自审全部勾选。
 
-`v1` 内以下标题视为公共接口，不得直接删除、重命名或改变其必填语义：
+Skill、OpenCode command 与 `AGENTS.md` 不再复制这些字段清单。Agent 在 PR 任务中按 Context Router 读取/使用模板，CI 负责机械验证。
+
+`v1` 内以下标题仍是冻结公共接口：
 
 ```text
 ## Related task
@@ -98,33 +92,24 @@ TheMasterplan 决定如何触发、如何验证采用契约、如何检查 PR �
 ## Notes for human
 ```
 
-如需改变契约，先增加兼容验证、提供迁移文档，并在下一主版本执行破坏性调整。
-
 ## 消费者契约
 
-调用方仓库必须满足最小采用契约（由 `scripts/validate_consumer.py` 机械验证）：
+调用方仓库必须满足 `scripts/validate_consumer.py` 机械验证的最小采用契约：
 
 - 仓库根目录存在；
 - 根部存在 `AGENTS.md`；
-- `project-check-path` 非空；
-- `project-check-path` 是 POSIX 相对路径；
-- 路径不含反斜杠、不含 `..`；
+- `project-check-path` 非空且是安全 POSIX 相对路径；
+- 路径不含反斜杠或 `..`；
 - 目标是普通文件、不是符号链接；
 - 目标受 Git 跟踪。
 
-第一版不强制 `AGENTS.md` 内容、技术栈、Issue 真实性、测试覆盖率、依赖版本、
-构建命令、发布流程或部署策略。
+不强制 `AGENTS.md` 内容、技术栈、Issue 真实性、测试覆盖率、依赖版本、构建命令、发布流程或部署策略。
 
 ## 兼容政策
 
-`v1` 内允许：修复错误、改善日志、增加不阻断的诊断、增加带默认值的可选输入、
-更新固定的第三方 Action SHA、改善性能、修复误报、改善文档、增加测试覆盖。
+v1 冻结线允许不破坏既有调用的修复，但不推进 ref。当前版通过不可变 SemVer Tag 发布。
 
-`v1` 内禁止：更改 v1 兼容线内 reusable workflow 路径（aw-check.yml）；删除或重命名输入；更改默认项目
-验证入口；更改 required check 公共名称；新增 Secret 要求或写权限；自动
-merge、release 或 deploy；修改 PR 必填标题；修改自审项文本导致现有调用失败；
-引入新的破坏性失败条件；把 Ubuntu required check 直接替换为其他平台；无
-迁移期地收紧项目契约。
+禁止未经主版本迁移直接改变：工作流路径、输入名/必填语义、默认项目验证入口、required check 公共名称、Secret/写权限要求或 PR 机械契约；不得加入自动 merge/release/deploy。
 
 ## 安全边界
 
@@ -133,15 +118,11 @@ merge、release 或 deploy；修改 PR 必填标题；修改自审项文本导�
 - 不使用 `pull_request_target`；
 - checkout 设置 `persist-credentials: false`；
 - 第三方 Action 固定到完整 commit SHA；
-- 项目验证路径不可为绝对路径、不可包含 `..`、不可为符号链接、必须受 Git
-  跟踪；
+- 项目验证路径不可为绝对路径、不可包含 `..`、不可为符号链接、必须受 Git 跟踪；
 - 不通过 `eval` 执行输入，不拼接任意命令；
-- 不自动 merge、release、deploy，不修改调用仓库，不删除远端 bookmark；
+- 不自动 merge、release、deploy，不修改调用仓库；
 - 不向 PR 代码暴露凭据。
 
 ## 故障回退
 
-消费者在坏版本出现时临时固定上一正常 Release tag 或完整 SHA，等待 TheMasterplan 发布
-前向修复；`v1` 兼容线已冻结（2026-08-02），不再快进，修复通过新版本通道
-发布（见 [release-channels.md](release-channels.md)）。不使用 force push 回写
-历史。
+消费者在坏版本出现时临时固定上一正常 Release tag 或完整 SHA，等待 TheMasterplan 发布前向修复；`v1` 兼容线继续冻结，不 force push 或重写已发布历史。
