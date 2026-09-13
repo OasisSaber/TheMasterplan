@@ -112,14 +112,14 @@ def plan_update(project_root: Path, source: Source, state: dict) -> dict:
     if not isinstance(selection, dict):
         raise UpdateError("state selection must be an object")
     profile = selection.get("profile")
-    adapter = selection.get("adapter")
-    if not isinstance(profile, str) or not isinstance(adapter, str):
-        raise UpdateError("state selection missing profile/adapter")
+    if not isinstance(profile, str):
+        raise UpdateError("state selection missing profile")
 
-    components = manifest.get("components", {})
-    profile_names = set(components.get("profiles", []))
-    adapter_names = set(components.get("adapters", []))
-    if profile not in profile_names or adapter not in adapter_names:
+    # v5 removes the Adapter abstraction. A v4 generic Adapter is a known
+    # no-op and is normalized away. Unknown historical values remain
+    # fail-closed instead of being silently reinterpreted.
+    legacy_adapter = selection.get("adapter")
+    if legacy_adapter not in (None, "generic"):
         return {
             "schema_version": 1,
             "plan_type": "update",
@@ -128,14 +128,33 @@ def plan_update(project_root: Path, source: Source, state: dict) -> dict:
             "files": [],
             "notes": [],
             "stop_conditions": [
+                "selection no longer supported by v5: "
+                f"adapter={legacy_adapter}"
+            ],
+        }
+
+    normalized_selection = dict(selection)
+    normalized_selection.pop("adapter", None)
+
+    components = manifest.get("components", {})
+    profile_names = set(components.get("profiles", []))
+    if profile not in profile_names:
+        return {
+            "schema_version": 1,
+            "plan_type": "update",
+            "source": source.as_dict(),
+            "selection": normalized_selection,
+            "files": [],
+            "notes": [],
+            "stop_conditions": [
                 "selection no longer supported by manifest: "
-                f"profile={profile}, adapter={adapter}"
+                f"profile={profile}"
             ],
         }
 
     entries = [
         entry
-        for entry in select_files(manifest, profile, adapter)
+        for entry in select_files(manifest, profile)
         if entry["destination"]
         not in (".github/workflows/check.yml", "scripts/check.sh")
     ]
@@ -250,7 +269,7 @@ def plan_update(project_root: Path, source: Source, state: dict) -> dict:
         "schema_version": 1,
         "plan_type": "update",
         "source": source.as_dict(),
-        "selection": selection,
+        "selection": normalized_selection,
         "files": operations,
         "notes": notes,
         "stop_conditions": stop_conditions,

@@ -89,7 +89,7 @@ class ReleaseIdentityTests(unittest.TestCase):
 class DistributionContractTests(unittest.TestCase):
     def test_manifest_is_current_and_contains_executor_bridge(self) -> None:
         manifest = load_manifest(ROOT / "distribution/manifest.json")
-        self.assertEqual(manifest["distribution_version"], "v4.1.0")
+        self.assertEqual(manifest["distribution_version"], "v5.0.0")
 
         bridges = [
             entry
@@ -124,7 +124,6 @@ class InstalledExecutorTests(unittest.TestCase):
             self.project,
             self.source,
             profile="git",
-            adapter="generic",
             validation_path="scripts/check.sh",
         )
         self.assertFalse(plan["stop_conditions"], plan["stop_conditions"])

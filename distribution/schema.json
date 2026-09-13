@@ -39,6 +39,8 @@
         },
         "adapters": {
           "type": "array",
+          "deprecated": true,
+          "description": "v4 upgrade compatibility bridge only; v5 runtime selection ignores Adapter components.",
           "items": {
             "type": "string"
           }

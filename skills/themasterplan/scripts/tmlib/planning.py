@@ -82,7 +82,6 @@ def plan_adopt(
     source: Source,
     *,
     profile: str,
-    adapter: str,
     validation_path: str,
     default_branch: str = "main",
     validation_path_exists: bool = False,
@@ -102,11 +101,11 @@ def plan_adopt(
     # custom validation path never also installs a default scripts/check.sh.
     entries = [
         e
-        for e in select_files(manifest, profile, adapter)
+        for e in select_files(manifest, profile)
         if e["destination"] not in (".github/workflows/check.yml", "scripts/check.sh")
     ]
     if not entries:
-        raise PlanningError("no files selected by manifest for profile/adapter")
+        raise PlanningError("no files selected by manifest for profile")
 
     # Source identity comes from the resolver only; the manifest version and
     # repository must agree with the resolver's Source (the resolver already
@@ -193,7 +192,6 @@ def plan_adopt(
         "source": source.as_dict(),
         "selection": {
             "profile": profile,
-            "adapter": adapter,
             "validation_path": validation_path,
             "default_branch": default_branch,
         },

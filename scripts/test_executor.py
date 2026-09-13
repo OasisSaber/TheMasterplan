@@ -49,7 +49,7 @@ MANIFEST_VERSION = load_manifest(
 STATE_JSON = {
     "schema_version": 1,
     "source": {"repository": "OasisSaber/TheMasterplan", "version": MANIFEST_VERSION, "commit": "a" * 40},
-    "selection": {"profile": "jj", "adapter": "generic", "validation_path": "scripts/check.sh", "default_branch": "main"},
+    "selection": {"profile": "jj", "validation_path": "scripts/check.sh", "default_branch": "main"},
     "managed_files": {},
     "adoption": {"date": "2026-08-02", "platform": "linux", "git_version": "2.40", "jj_version": "0.43", "status": "PARTIAL"},
 }
@@ -214,12 +214,12 @@ class InspectTest(unittest.TestCase):
         status, _ = detect_status(self.root, target_version="v9.9.9")
         self.assertEqual(status, "MODIFIED", "MODIFIED must win over OUTDATED")
 
-    def test_detect_profile_adapter(self) -> None:
+    def test_detect_profile(self) -> None:
         (self.root / ".jj").mkdir()
         (self.root / ".trellis").mkdir()
         result = inspect(self.root)
         self.assertEqual(result["detected_profile"], "jj")
-        self.assertEqual(result["detected_adapter"], "generic")
+        self.assertNotIn("detected_adapter", result)
 
 
 class AdoptFlowTest(_SourceMixin, unittest.TestCase):
@@ -237,13 +237,12 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
     def tearDown(self) -> None:
         self.tmp.cleanup()
 
-    def _plan(self, profile="git", adapter="generic", validation="scripts/check.sh") -> dict:
+    def _plan(self, profile="git", validation="scripts/check.sh") -> dict:
         source = resolve_local(PACKAGE_ROOT, commit=TEST_COMMIT)
         return plan_adopt(
             self.root,
             source,
             profile=profile,
-            adapter=adapter,
             validation_path=validation,
         )
 
@@ -326,12 +325,12 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
             "existing validation entrypoint must not be overwritten",
         )
 
-    def test_jj_generic_selection(self) -> None:
-        plan = self._plan(profile="jj", adapter="generic")
+    def test_jj_profile_selection(self) -> None:
+        plan = self._plan(profile="jj")
         dests = [op["destination"] for op in plan["files"]]
         self.assertIn("profiles/jj.md", dests)
-        self.assertIn("adapters/generic.md", dests)
         self.assertNotIn("profiles/git.md", dests)
+        self.assertFalse(any(dest.startswith("adapters/") for dest in dests))
 
 
     def test_invalid_commit_assertion_fails(self) -> None:
@@ -364,7 +363,13 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
         apply_adopt(self.root, plan_path, self._source())
         agents = self.root / "AGENTS.md"
         data = agents.read_bytes()
-        agents.write_bytes(data.replace(b"## \xe6\x9d\x83\xe5\xa8\x81\xe9\xa1\xba\xe5\xba\x8f", b"## \xe6\x9d\x83\xe5\xa8\x81\xe9\xa1\xba\xe5\xba\x8f\xef\xbc\x88\xe5\xb7\xb2\xe7\xaf\xa1\xe6\x94\xb9\xef\xbc\x89", 1))
+        agents.write_bytes(
+            data.replace(
+                b"This block is the project Context Router.",
+                b"This block is the modified Context Router.",
+                1,
+            )
+        )
         status, issues = detect_status(self.root, target_version=MANIFEST_VERSION)
         self.assertEqual(status, "MODIFIED", issues)
         report = verify(self.root)
@@ -391,13 +396,12 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
         """Apply must refuse when the package source file changed after planning."""
         with tempfile.TemporaryDirectory() as tmp:
             pkg = Path(tmp)
-            for sub in ("distribution", "core", "profiles", "adapters", "skills"):
+            for sub in ("distribution", "core", "profiles", "skills"):
                 shutil.copytree(PACKAGE_ROOT / sub, pkg / sub)
             plan = plan_adopt(
                 self.root,
                 resolve_local(pkg, commit=TEST_COMMIT),
                 profile="git",
-                adapter="generic",
                 validation_path="scripts/check.sh",
             )
             plan_path = self.root / ".themasterplan-plan.json"
@@ -410,34 +414,34 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
             self.assertFalse((self.root / ".themasterplan/state.json").exists())
 
     def test_late_source_changed_stops_before_any_write(self) -> None:
-        """A later source mismatch must fail before the first project write."""
+        """A later selected source mismatch must fail before any project write."""
         with tempfile.TemporaryDirectory() as tmp:
             pkg = Path(tmp)
-            for sub in ("distribution", "core", "profiles", "adapters", "skills"):
+            for sub in ("distribution", "core", "profiles", "skills"):
                 shutil.copytree(PACKAGE_ROOT / sub, pkg / sub)
-            manifest = load_manifest(pkg / "distribution" / "manifest.json")
             plan = plan_adopt(
                 self.root,
                 resolve_local(pkg, commit=TEST_COMMIT),
                 profile="git",
-                adapter="generic",
                 validation_path="scripts/check.sh",
             )
             plan_path = self.root / ".themasterplan-plan.json"
             write_json_atomic(plan_path, plan)
-            # adapters/generic.md is selected after the core files in the
-            # manifest, so the old implementation could have written earlier
-            # files before detecting this mismatch.
-            (pkg / "adapters" / "generic.md").write_bytes(b"tampered later source\n")
+            (pkg / "profiles" / "git.md").write_bytes(b"tampered later source\n")
             with self.assertRaises(TheMasterplanError) as ctx:
-                apply_adopt(self.root, plan_path, resolve_local(pkg, commit=TEST_COMMIT))
+                apply_adopt(
+                    self.root,
+                    plan_path,
+                    resolve_local(pkg, commit=TEST_COMMIT),
+                )
             self.assertIn("source file changed since plan", str(ctx.exception))
-            # No project write may have happened.
             self.assertFalse((self.root / "core" / "workflow.md").exists())
             self.assertFalse((self.root / "core" / "policy.md").exists())
             self.assertFalse((self.root / "profiles" / "git.md").exists())
             self.assertFalse((self.root / "AGENTS.md").exists())
-            self.assertFalse((self.root / ".themasterplan" / "state.json").exists())
+            self.assertFalse(
+                (self.root / ".themasterplan" / "state.json").exists()
+            )
 
     def test_custom_default_branch_rendered(self) -> None:
         """The consumer workflow must target the selected default branch."""
@@ -446,7 +450,6 @@ class AdoptFlowTest(_SourceMixin, unittest.TestCase):
             self.root,
             self._source(),
             profile="git",
-            adapter="generic",
             validation_path="scripts/check.sh",
             default_branch="master",
         )
@@ -499,7 +502,6 @@ class CliTest(unittest.TestCase):
                 "--source", str(PACKAGE_ROOT),
                 "--commit", TEST_COMMIT,
                 "--profile", "git",
-                "--adapter", "generic",
                 "--validation-path", "scripts/check.sh",
                 "--output", str(plan_out),
             ],
@@ -517,9 +519,9 @@ class CliTest(unittest.TestCase):
 
 
 class PlanAdoptParserTest(unittest.TestCase):
-    """plan-adopt CLI exposes only the lightweight generic adapter."""
+    """v5 plan-adopt has no Adapter CLI surface."""
 
-    def test_plan_adopt_accepts_only_generic_adapter(self):
+    def test_plan_adopt_has_no_adapter_argument(self):
         parser = build_parser()
         common = [
             "plan-adopt",
@@ -533,12 +535,11 @@ class PlanAdoptParserTest(unittest.TestCase):
             "plan.json",
         ]
 
-        args = parser.parse_args(common + ["--adapter", "generic"])
-        self.assertEqual(args.adapter, "generic")
+        args = parser.parse_args(common)
+        self.assertFalse(hasattr(args, "adapter"))
 
-        for retired in ("trellis", "agent-orchestrator"):
-            with self.assertRaises(SystemExit):
-                parser.parse_args(common + ["--adapter", retired])
+        with self.assertRaises(SystemExit):
+            parser.parse_args(common + ["--adapter", "generic"])
 
 
 if __name__ == "__main__":

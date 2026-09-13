@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "distribution_version": "v4.1.0",
+  "distribution_version": "v5.0.0",
   "source_repository": "OasisSaber/TheMasterplan",
   "required": [
     "core/workflow.md",
@@ -37,12 +37,6 @@
     {
       "source": "profiles/jj.md",
       "destination": "profiles/jj.md",
-      "ownership": "managed-replace",
-      "required": false
-    },
-    {
-      "source": "adapters/generic.md",
-      "destination": "adapters/generic.md",
       "ownership": "managed-replace",
       "required": false
     },

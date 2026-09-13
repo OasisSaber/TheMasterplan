@@ -54,7 +54,6 @@ class ExecutorStateHygieneTests(unittest.TestCase):
             self.project,
             self.source,
             profile="git",
-            adapter="generic",
             validation_path="scripts/check.sh",
         )
         self.assertFalse(plan["stop_conditions"], plan["stop_conditions"])

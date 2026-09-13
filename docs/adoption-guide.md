@@ -85,29 +85,29 @@ TheMasterplan 中央仓库负责工作流治理、PR 合规检查、安全基线
 
 ### 最小采用集合（含薄 Skill）
 
-最小采用集合为：根部 `AGENTS.md`、`core/`、所需 `profiles/` 与可选
-`adapters/`；`skills/themasterplan/`（`SKILL.md` 与 `references/`）是
-客户端加载入口，不是完整规则本体——仅复制 Skill 不构成完整采用。Skill
-加载后会检测 TheMasterplan 文件、声明加载顺序与权威来源，并在 `AGENTS.md`、`core/`
-或所需 Profile 缺失时提示“TheMasterplan 未完整安装”，不静默推断完整规则。采用者仍
-必须替换项目事实、配置真实验证命令与 GitHub 保护，并按
-[新仓库烟雾测试](#新仓库烟雾测试)完成端到端演练；版本记录中的采用范围
-填写实际采用的规则文件集合（如“最小采用集合：AGENTS.md + core/ +
-profiles/git.md”）。
+v5 的最小采用集合为：根部 `AGENTS.md`、`core/`、选定的 VCS Profile/
+参考文件，以及 `skills/themasterplan/` 的薄 Skill 入口。
+
+Skill 不再复制完整规则或声明一套固定预读顺序。Agent 先读取 `AGENTS.md`，
+然后按 Context Router 只加载与当前任务有关的文档；普通实现任务不应因为仓库
+存在 Release、Update 或 VCS 文档就预读它们。仅复制 Skill 仍不构成完整采用。
+
+采用者仍必须替换项目事实、配置真实验证命令与 GitHub 保护，并按
+[新仓库烟雾测试](#新仓库烟雾测试)完成端到端演练；版本记录中的采用范围填写
+实际采用的规则文件集合。
 
 任何采用方式都应记录实际来源的 Release tag 或完整 commit SHA，不得因为文档示例而声称采用了未实际使用的版本。
 
 ### 更新检测
 
-采用项目加载 `/TheMasterplan` Skill 时会只读检测当前版本与最新稳定
-Release：`CURRENT` 直接继续；`UPDATE_AVAILABLE` 报告版本与提交身份，由
-用户决定是否生成只读升级计划；`UNAVAILABLE`/`NOT_ADOPTED` 只提示，不阻断
-任务。TheMasterplan 不自动升级。检测命令、确认门、缓存与离线行为见
-[client-update-flow.md](client-update-flow.md)。
+v5 不在普通 `/TheMasterplan` Skill 调用时自动执行更新检测。只有用户明确提出
+update、adopt、maintenance 或版本检查意图时，才按
+[client-update-flow.md](client-update-flow.md)加载更新规则并运行只读
+`check-update`。TheMasterplan 仍不会自动升级。
 
 ### 外部交付工作流共存
 
-TheMasterplan 不再提供外部 orchestrator 专用 Adapter。
+TheMasterplan 不提供外部 orchestrator 专用兼容层。
 
 采用项目在每个任务开始时按 `core/workflow.md` §0 判断治理所有权：
 

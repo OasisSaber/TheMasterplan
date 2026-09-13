@@ -54,7 +54,7 @@ Agent Orchestrator、Trellis 或其他工具的版本/配置特征矩阵。
    `TheMasterplan: ABSTAINED — external delivery workflow owns this task.`
 2. 不继续套用 TheMasterplan 的任务 change、PR、reaction、cleanup 或发布规则。
 3. 不运行 `check-update`、`plan-update`、`apply-update`。
-4. 不为外部工作流生成配置、Adapter 或兼容层。
+4. 不为外部工作流生成配置或专用兼容层。
 5. 不修改外部系统的 session、worker、worktree、branch、PR 或 pipeline。
 6. 把控制权留给已经拥有生命周期的系统。
 
@@ -72,30 +72,24 @@ Agent Orchestrator、Trellis 或其他工具的版本/配置特征矩阵。
 - 若项目希望完全由另一个治理系统接管，应由人类在采用/迁移任务中明确选择
   唯一治理方案，而不是让 TheMasterplan 自动修改仓库设置。
 
-## v3.1.1 → v3.2.0
+## v5.0.0 当前模型
 
-v3.2.0 删除专用的 Agent Orchestrator 与 Trellis Adapter。
+v5 不再把 Harness Adapter 作为当前 CLI/state/Context 抽象。直接使用
+OpenCode、Codex、ChatGPT、Shell、Git 或 jj 并不会自动产生治理冲突；判断仍只看
+“谁拥有当前任务的交付生命周期”。
 
-使用 `adapter=generic` 的采用项目可以走正常升级。
+为让已发布 v4.1.x 的旧执行器能够规划到 v5，分发 Manifest 可暂时保留机器级
+`components.adapters=["generic"]` 兼容桥。该字段不会进入 v5 新 state，也不会
+被 v5 Skill/Router 加载；它不是外部 workflow 适配层。
 
-历史 `.themasterplan/state.json` 若选择：
-
-```text
-adapter = trellis
-adapter = agent-orchestrator
-```
-
-升级计划应 fail closed 为 `SELECTION_CHANGED` / `selection no longer supported`，
-不得自动把选择改成 `generic`。
-
-这不是升级器故障，而是有意的治理所有权迁移门。是否退出外部工作流并重新采用
-`generic`，必须由人类单独决定。
+历史 `adapter=generic` 可作为 no-op 迁移；其他未知历史 Adapter 值继续
+fail closed。具体升级行为见 [client-update-flow.md](client-update-flow.md)。
 
 ## 不做的事情
 
 TheMasterplan 不再：
 
-- 维护外部 orchestrator Adapter；
+- 维护外部 orchestrator 专用适配层；
 - 跟踪外部工具配置 schema；
 - 配置 reaction / claim / worker reuse；
 - 宣称某个外部编排器 VERIFIED / PARTIAL；

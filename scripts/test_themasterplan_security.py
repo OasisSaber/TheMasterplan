@@ -42,7 +42,6 @@ def copy_package() -> Path:
         "distribution",
         "core",
         "profiles",
-        "adapters",
         "skills/themasterplan",
     ):
         source = REPO_ROOT / relative
@@ -162,7 +161,6 @@ class UpdateSafetyTest(unittest.TestCase):
             "source": self.source.as_dict(),
             "selection": {
                 "profile": "git",
-                "adapter": "generic",
                 "validation_path": "scripts/check.sh",
                 "default_branch": "main",
             },
@@ -246,7 +244,6 @@ class UpdateSafetyTest(unittest.TestCase):
             },
             "selection": {
                 "profile": "git",
-                "adapter": "generic",
                 "validation_path": "scripts/check.sh",
                 "default_branch": "main",
             },
