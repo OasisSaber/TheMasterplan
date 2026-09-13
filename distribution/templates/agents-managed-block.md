@@ -5,8 +5,7 @@ This block is the project Context Router. Load guidance only when the task needs
 
 - routine delivery: `core/workflow.md`
 - authorization / merge / release / destructive remote action: `core/policy.md`
-- Git release/tag: `profiles/git.md`
-- Jujutsu release/tag: `profiles/jj.md`
+- VCS release/tag: load the selected `profiles/<profile>.md` from `.themasterplan/state.json`
 - Jujutsu daily change/bookmark commands: `skills/themasterplan/references/jj-lifecycle.md`
 - adoption/update: `docs/client-update-flow.md`
 
