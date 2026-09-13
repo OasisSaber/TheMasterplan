@@ -174,14 +174,6 @@ TheMasterplan 不试图成为：
 它只解决一个问题：**在 Agent 已经足够能干的前提下，用尽可能少的长期上下文，
 保持交付责任、验证和人类决策边界清晰。**
 
-## 来源
-
-TheMasterplan 整理自
-[OasisSaber/agentic-project-workflow](https://github.com/OasisSaber/agentic-project-workflow)
-的最终接受基线。历史研发记录保留在旧仓库。
-
-基线提交：`ee0482d08ea6859bef2d1c06f37fa97bb25a575f`
-
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

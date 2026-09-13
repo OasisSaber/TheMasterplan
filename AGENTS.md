@@ -9,7 +9,7 @@
 - 定位：单一交付责任人的轻量 AI 辅助代码交付治理协议。
 - 默认分支：`main`
 - 权威验证入口：`bash scripts/check.sh`
-- 当前稳定中央 Actions：`OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v4.1.0`
+- 当前稳定中央 Actions：`OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v5.0.0`
 - v1 冻结兼容线：`OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1`
 - 合并策略：默认由人类决定 Squash Merge；微小修复快速通道仅按
   `core/workflow.md` 的明确条件使用。
