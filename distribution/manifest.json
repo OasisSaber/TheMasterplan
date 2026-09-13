@@ -38,6 +38,18 @@
       "required": false
     },
     {
+      "source": "skills/themasterplan/references/jj-lifecycle.md",
+      "destination": "skills/themasterplan/references/jj-lifecycle.md",
+      "ownership": "managed-replace",
+      "required": false
+    },
+    {
+      "source": "docs/client-update-flow.md",
+      "destination": "docs/client-update-flow.md",
+      "ownership": "managed-replace",
+      "required": false
+    },
+    {
       "source": "skills/themasterplan/scripts/tmlib/update_check.py",
       "destination": ".themasterplan/bin/tmlib/update_check.py",
       "ownership": "managed-replace",
