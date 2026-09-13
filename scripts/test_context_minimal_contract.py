@@ -31,6 +31,9 @@ SCHEMA = ROOT / "distribution/schema.json"
 STATE_DOC = ROOT / "docs/themasterplan-state-format.md"
 README = ROOT / "README.md"
 ADOPTION = ROOT / "docs/adoption-guide.md"
+ACTIONS_INTERFACE = ROOT / "docs/actions-interface.md"
+RELEASE_CHANNELS = ROOT / "docs/release-channels.md"
+CONSUMER_WORKFLOW = ROOT / "distribution/templates/consumer-workflow.yml"
 MANAGED_BLOCK = ROOT / "distribution/templates/agents-managed-block.md"
 TEST_COMMIT = "f" * 40
 
@@ -199,6 +202,29 @@ class ContextMinimalContractTests(unittest.TestCase):
         self.assertIn("profiles/git.md", destinations)
         self.assertNotIn("profiles/jj.md", destinations)
         self.assertFalse(any(path.startswith("adapters/") for path in destinations))
+
+    def test_v5_release_channel_surfaces_are_synchronized(self) -> None:
+        consumer = CONSUMER_WORKFLOW.read_text(encoding="utf-8")
+        actions = ACTIONS_INTERFACE.read_text(encoding="utf-8")
+        channels = RELEASE_CHANNELS.read_text(encoding="utf-8")
+        readme = README.read_text(encoding="utf-8")
+        adoption = ADOPTION.read_text(encoding="utf-8")
+
+        for body in (consumer, actions, readme, adoption):
+            self.assertIn("v5.0.0", body)
+            self.assertNotIn("themasterplan-check.yml@v4.1.0", body)
+            self.assertNotIn("policy-ref: v4.1.0", body)
+
+        self.assertIn("themasterplan-check.yml@v5.0.0", consumer)
+        self.assertIn("policy-ref: v5.0.0", consumer)
+        self.assertIn(
+            "v5.0.0      当前版不可变 Release tag",
+            channels,
+        )
+        self.assertIn(
+            "v4.1.0      历史不可变 Release tag",
+            channels,
+        )
 
     def test_state_doc_removes_adapter_from_v5_selection(self) -> None:
         body = STATE_DOC.read_text(encoding="utf-8")
