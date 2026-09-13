@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Release-integrity regression tests for TheMasterplan v3.1.1.
+"""Release-integrity regression tests for the installed TheMasterplan executor.
 
-These tests focus on the installed executor artifact and the v3.1.0 -> v3.1.1
-bridge. They intentionally avoid live GitHub requests.
+These tests preserve the historical update-check bridge coverage while asserting
+current distribution identity. They intentionally avoid live GitHub requests.
 """
 
 from __future__ import annotations
@@ -39,14 +39,14 @@ class ReleaseIdentityTests(unittest.TestCase):
     def test_release_identity_serializes_repository(self) -> None:
         identity = ReleaseIdentity(
             repository=REPOSITORY,
-            version="v3.1.1",
+            version="v5.0.0",
             commit=TEST_COMMIT,
         )
         self.assertEqual(
             identity.to_dict(),
             {
                 "repository": REPOSITORY,
-                "version": "v3.1.1",
+                "version": "v5.0.0",
                 "commit": TEST_COMMIT,
             },
         )
@@ -61,7 +61,7 @@ class ReleaseIdentityTests(unittest.TestCase):
                     "schema_version": 1,
                     "source": {
                         "repository": REPOSITORY,
-                        "version": "v3.1.1",
+                        "version": "v5.0.0",
                         "commit": TEST_COMMIT,
                     },
                 },
@@ -73,7 +73,7 @@ class ReleaseIdentityTests(unittest.TestCase):
                     "repository": REPOSITORY,
                     "include_prerelease": False,
                     "latest": {
-                        "version": "v3.1.1",
+                        "version": "v5.0.0",
                         "commit": OTHER_COMMIT,
                     },
                 },
@@ -89,7 +89,7 @@ class ReleaseIdentityTests(unittest.TestCase):
 class DistributionContractTests(unittest.TestCase):
     def test_manifest_is_current_and_contains_executor_bridge(self) -> None:
         manifest = load_manifest(ROOT / "distribution/manifest.json")
-        self.assertEqual(manifest["distribution_version"], "v4.1.0")
+        self.assertEqual(manifest["distribution_version"], "v5.0.0")
 
         bridges = [
             entry
@@ -124,7 +124,6 @@ class InstalledExecutorTests(unittest.TestCase):
             self.project,
             self.source,
             profile="git",
-            adapter="generic",
             validation_path="scripts/check.sh",
         )
         self.assertFalse(plan["stop_conditions"], plan["stop_conditions"])
@@ -154,8 +153,8 @@ class InstalledExecutorTests(unittest.TestCase):
         self._adopt()
         self._assert_installed_executor_starts()
 
-    def test_v310_state_plans_bridge_as_add(self) -> None:
-        """Prove the bridge appears as a normal ADD operation."""
+    def test_legacy_state_plans_bridge_as_add(self) -> None:
+        """Prove a missing bridge remains a normal ADD operation."""
         self._adopt()
 
         bridge = self.project / BRIDGE_DESTINATION
@@ -165,7 +164,7 @@ class InstalledExecutorTests(unittest.TestCase):
         state = read_json(state_path)
         state["source"] = {
             "repository": REPOSITORY,
-            "version": "v3.1.0",
+            "version": "v4.1.0",
             "commit": OLD_COMMIT,
         }
         state["managed_files"].pop(BRIDGE_DESTINATION, None)
