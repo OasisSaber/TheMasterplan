@@ -21,6 +21,7 @@ from tmlib.planning import plan_adopt  # noqa: E402
 from tmlib.source import resolve_local  # noqa: E402
 from tmlib.util import write_json_atomic  # noqa: E402
 from scripts.validate_markdown_links import validate_repository  # noqa: E402
+from scripts.test_check_entry import BASH  # noqa: E402
 
 AGENTS = ROOT / "AGENTS.md"
 WORKFLOW = ROOT / "core/workflow.md"
@@ -204,6 +205,47 @@ class ContextMinimalContractTests(unittest.TestCase):
             self.assertIn("selected installed profile under `profiles/`", body)
             self.assertNotIn("profiles/git.md", body)
             self.assertNotIn("profiles/jj.md", body)
+
+    def test_jj_documented_release_guard_fails_closed_before_writes(self) -> None:
+        """Execute the documented Bash block with stubbed transport, not live gh/jj."""
+        body = (ROOT / "profiles/jj.md").read_text(encoding="utf-8")
+        execution = body.split("## 阶段 C：", 1)[1]
+        block = execution.split("```bash\n", 1)[1].split("```", 1)[0]
+        stubs = r'''
+APPROVED_CANDIDATE_SHA=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+TAG=v99.0.0
+NOTES_FILE=notes.md
+git() {
+  case "$1" in
+    ls-remote) case "$*" in *refs/heads/main*) echo "$APPROVED_CANDIDATE_SHA";; esac;;
+    tag) [ "$2" = "--list" ] || echo "WRITE tag";;
+    push) echo "WRITE push";;
+  esac
+  return 0
+}
+gh() {
+  if [ "$1" = "repo" ]; then
+    [ "$MODE" != "repo-error" ] || return 1
+    echo fixture/example
+  else
+    [ "$MODE" != "api-error" ] || return 1
+    [ "$MODE" != "existing" ] || echo "$TAG"
+    return 0
+  fi
+}
+'''
+        for mode in ("repo-error", "api-error", "existing", "absent"):
+            with self.subTest(mode=mode):
+                result = subprocess.run(
+                    [BASH, "-c", f"MODE={mode}\n" + stubs + block],
+                    capture_output=True, text=True, encoding="utf-8", check=False,
+                )
+                if mode == "absent":
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stdout.splitlines(), ["WRITE tag", "WRITE push"])
+                else:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertNotIn("WRITE", result.stdout)
 
     def test_v41_old_executor_selection_gate_accepts_v5_manifest(self) -> None:
         """Freeze the v4.1 manifest gate needed for the major-version bridge.

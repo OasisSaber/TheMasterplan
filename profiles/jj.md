@@ -48,7 +48,14 @@ CUR_MAIN=$(git ls-remote origin "refs/heads/main" | awk '{print $1}')
 REMOTE_TAG=$(git ls-remote --tags origin "refs/tags/$TAG")
 LOCAL_TAG=$(git tag --list "$TAG")
 [ -z "$REMOTE_TAG" ] && [ -z "$LOCAL_TAG" ] || exit 1
-# Release 不存在的检查也必须在写入前重新完成，查询失败时停止。
+# 成功查询全部 Release 后才可判定不存在；认证、网络、分页失败均退出。
+REPOSITORY=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
+[ -n "$REPOSITORY" ] || exit 1
+RELEASE_TAGS=$(gh api "repos/$REPOSITORY/releases" --paginate --jq '.[].tag_name')
+if printf '%s\n' "$RELEASE_TAGS" | grep -Fxq -- "$TAG"; then
+  echo "release already exists: $TAG" >&2
+  exit 1
+fi
 git tag -a "$TAG" -m "Release $TAG" "$APPROVED_CANDIDATE_SHA"
 git push origin "$TAG"
 ```
