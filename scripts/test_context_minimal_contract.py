@@ -142,6 +142,22 @@ class ContextMinimalContractTests(unittest.TestCase):
         self.assertNotIn("可选\n`adapters/`", adoption)
         self.assertNotIn("加载 `/TheMasterplan` Skill 时会只读检测", adoption)
 
+    def test_update_preparation_does_not_bypass_apply_authorization(self) -> None:
+        body = (ROOT / "docs/client-update-flow.md").read_text(encoding="utf-8")
+        self.assertIn("不再询问是否生成计划", body)
+        self.assertIn("仅查版本的请求不扩展成升级计划", body)
+        self.assertIn("批准前不得运行", body)
+        self.assertIn("泛泛的“更新一下”不替代", body)
+        self.assertIn("未列入则不修改", body)
+        self.assertIn("本地 hash", body)
+        self.assertIn("`LOCAL_MODIFIED` 停止", body)
+        self.assertIn("会写本地计划文件", body)
+        self.assertNotIn("每阶段都需要用户明确决定", body)
+        self.assertNotIn("第二次明确批准", body)
+        adoption = ADOPTION.read_text(encoding="utf-8")
+        self.assertIn("Agent 仅在明确批准后执行", adoption)
+        self.assertIn("§7.1 的全部豁免条件", adoption)
+
 
     def _fresh_adopt_agents(self, profile: str) -> str:
         with tempfile.TemporaryDirectory() as tmp:
