@@ -20,6 +20,7 @@ from tmlib.inspect import inspect  # noqa: E402
 from tmlib.planning import plan_adopt  # noqa: E402
 from tmlib.source import resolve_local  # noqa: E402
 from tmlib.util import write_json_atomic  # noqa: E402
+from scripts.validate_markdown_links import validate_repository  # noqa: E402
 
 AGENTS = ROOT / "AGENTS.md"
 WORKFLOW = ROOT / "core/workflow.md"
@@ -150,6 +151,12 @@ class ContextMinimalContractTests(unittest.TestCase):
             )
             self.assertTrue(selected.is_file())
             self.assertFalse(other.exists())
+            # Validate the installed tree, not the richer upstream checkout.
+            self.assertEqual(validate_repository(project), [])
+            profile_body = selected.read_text(encoding="utf-8")
+            if profile == "jj":
+                self.assertNotIn("profiles/git.md", profile_body)
+            self.assertNotIn("docs/release-channels.md", profile_body)
             return (project / "AGENTS.md").read_text(encoding="utf-8")
 
     def test_adopted_router_has_no_dead_profile_link(self) -> None:

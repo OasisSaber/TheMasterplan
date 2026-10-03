@@ -15,7 +15,7 @@
 
 ## 发布顺序（tag-only）
 
-与 [docs/release-channels.md](../docs/release-channels.md) 一致，固定顺序为：
+本 Profile 自包含采用项目所需的 tag-only 执行规则，固定顺序为：
 
 ```text
 创建并 push tag → 固定 tag 消费者 smoke test → 创建 GitHub Release → 最终远端验证
