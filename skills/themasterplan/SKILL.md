@@ -19,6 +19,8 @@ relevant validation passes, failures caused by the change are fixed and
 revalidated, and the final diff has been reviewed — or until a genuine human
 decision boundary is reached.
 
+Safe local work needs no per-step approval; inspect unknown checks for side effects.
+
 Mechanical contracts belong to their files and validators. For example, use the
 repository Pull Request template and CI validator instead of reproducing their
 field lists here.

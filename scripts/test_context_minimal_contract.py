@@ -117,6 +117,24 @@ class ContextMinimalContractTests(unittest.TestCase):
         self.assertIn("真正的停止边界", body)
         self.assertIn("不要在第一次实现后", body)
 
+    def test_completion_and_validation_gates_are_consistent(self) -> None:
+        agents = AGENTS.read_text(encoding="utf-8")
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("四项全部满足", agents)
+        self.assertIn("不得将暂停交接写成任务完成", agents)
+        self.assertIn("按改动风险", workflow)
+        self.assertIn("相关测试不能代替", workflow)
+        self.assertIn("未知验证入口不等于安全", workflow)
+        for surface in (SKILL, OPENCODE_SKILL, MANAGED_BLOCK):
+            body = surface.read_text(encoding="utf-8")
+            self.assertIn("per-step approval", body)
+            self.assertIn("unknown checks", body)
+        for profile in ("git", "jj"):
+            installed = self._fresh_adopt_agents(profile)
+            self.assertIn("All four conditions are required", installed)
+            self.assertIn("not completion", installed)
+            self.assertIn("unknown checks", installed)
+
     def test_current_docs_do_not_advertise_adapter_selection(self) -> None:
         readme = README.read_text(encoding="utf-8")
         adoption = ADOPTION.read_text(encoding="utf-8")

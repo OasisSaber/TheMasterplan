@@ -12,9 +12,13 @@ This block is the project Context Router. Load guidance only when the task needs
 
 Do not preload the whole rule stack.
 
+Safe local reading, editing and validation continue without per-step approval;
+unknown checks require side-effect inspection, not an assumption of safety.
+
 Within the authorized scope, continue until the requested result exists, relevant
 validation passes, failures caused by the change are fixed and revalidated, and
-the final diff is reviewed — or until a genuine human decision boundary is reached.
+the final diff is reviewed. All four conditions are required. At a genuine human
+decision boundary, report unfinished work and the needed decision, not completion.
 <!-- THEMASTERPLAN:END MANAGED -->
 
 ## 项目事实
