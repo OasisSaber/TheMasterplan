@@ -20,6 +20,8 @@ from tmlib.inspect import inspect  # noqa: E402
 from tmlib.planning import plan_adopt  # noqa: E402
 from tmlib.source import resolve_local  # noqa: E402
 from tmlib.util import write_json_atomic  # noqa: E402
+from scripts.validate_markdown_links import validate_repository  # noqa: E402
+from scripts.test_check_entry import BASH  # noqa: E402
 
 AGENTS = ROOT / "AGENTS.md"
 WORKFLOW = ROOT / "core/workflow.md"
@@ -116,12 +118,46 @@ class ContextMinimalContractTests(unittest.TestCase):
         self.assertIn("真正的停止边界", body)
         self.assertIn("不要在第一次实现后", body)
 
+    def test_completion_and_validation_gates_are_consistent(self) -> None:
+        agents = AGENTS.read_text(encoding="utf-8")
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("四项全部满足", agents)
+        self.assertIn("不得将暂停交接写成任务完成", agents)
+        self.assertIn("按改动风险", workflow)
+        self.assertIn("相关测试不能代替", workflow)
+        self.assertIn("未知验证入口不等于安全", workflow)
+        for surface in (SKILL, OPENCODE_SKILL, MANAGED_BLOCK):
+            body = surface.read_text(encoding="utf-8")
+            self.assertIn("per-step approval", body)
+            self.assertIn("unknown checks", body)
+        for profile in ("git", "jj"):
+            installed = self._fresh_adopt_agents(profile)
+            self.assertIn("All four conditions are required", installed)
+            self.assertIn("not completion", installed)
+            self.assertIn("unknown checks", installed)
+
     def test_current_docs_do_not_advertise_adapter_selection(self) -> None:
         readme = README.read_text(encoding="utf-8")
         adoption = ADOPTION.read_text(encoding="utf-8")
         self.assertNotIn("可选\n`adapters/`", readme)
         self.assertNotIn("可选\n`adapters/`", adoption)
         self.assertNotIn("加载 `/TheMasterplan` Skill 时会只读检测", adoption)
+
+    def test_update_preparation_does_not_bypass_apply_authorization(self) -> None:
+        body = (ROOT / "docs/client-update-flow.md").read_text(encoding="utf-8")
+        self.assertIn("不再询问是否生成计划", body)
+        self.assertIn("仅查版本的请求不扩展成升级计划", body)
+        self.assertIn("批准前不得运行", body)
+        self.assertIn("泛泛的“更新一下”不替代", body)
+        self.assertIn("未列入则不修改", body)
+        self.assertIn("本地 hash", body)
+        self.assertIn("`LOCAL_MODIFIED` 停止", body)
+        self.assertIn("会写本地计划文件", body)
+        self.assertNotIn("每阶段都需要用户明确决定", body)
+        self.assertNotIn("第二次明确批准", body)
+        adoption = ADOPTION.read_text(encoding="utf-8")
+        self.assertIn("Agent 仅在明确批准后执行", adoption)
+        self.assertIn("§7.1 的全部豁免条件", adoption)
 
 
     def _fresh_adopt_agents(self, profile: str) -> str:
@@ -150,6 +186,12 @@ class ContextMinimalContractTests(unittest.TestCase):
             )
             self.assertTrue(selected.is_file())
             self.assertFalse(other.exists())
+            # Validate the installed tree, not the richer upstream checkout.
+            self.assertEqual(validate_repository(project), [])
+            profile_body = selected.read_text(encoding="utf-8")
+            if profile == "jj":
+                self.assertNotIn("profiles/git.md", profile_body)
+            self.assertNotIn("docs/release-channels.md", profile_body)
             return (project / "AGENTS.md").read_text(encoding="utf-8")
 
     def test_adopted_router_has_no_dead_profile_link(self) -> None:
@@ -163,6 +205,47 @@ class ContextMinimalContractTests(unittest.TestCase):
             self.assertIn("selected installed profile under `profiles/`", body)
             self.assertNotIn("profiles/git.md", body)
             self.assertNotIn("profiles/jj.md", body)
+
+    def test_jj_documented_release_guard_fails_closed_before_writes(self) -> None:
+        """Execute the documented Bash block with stubbed transport, not live gh/jj."""
+        body = (ROOT / "profiles/jj.md").read_text(encoding="utf-8")
+        execution = body.split("## 阶段 C：", 1)[1]
+        block = execution.split("```bash\n", 1)[1].split("```", 1)[0]
+        stubs = r'''
+APPROVED_CANDIDATE_SHA=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+TAG=v99.0.0
+NOTES_FILE=notes.md
+git() {
+  case "$1" in
+    ls-remote) case "$*" in *refs/heads/main*) echo "$APPROVED_CANDIDATE_SHA";; esac;;
+    tag) [ "$2" = "--list" ] || echo "WRITE tag";;
+    push) echo "WRITE push";;
+  esac
+  return 0
+}
+gh() {
+  if [ "$1" = "repo" ]; then
+    [ "$MODE" != "repo-error" ] || return 1
+    echo fixture/example
+  else
+    [ "$MODE" != "api-error" ] || return 1
+    [ "$MODE" != "existing" ] || echo "$TAG"
+    return 0
+  fi
+}
+'''
+        for mode in ("repo-error", "api-error", "existing", "absent"):
+            with self.subTest(mode=mode):
+                result = subprocess.run(
+                    [BASH, "-c", f"MODE={mode}\n" + stubs + block],
+                    capture_output=True, text=True, encoding="utf-8", check=False,
+                )
+                if mode == "absent":
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stdout.splitlines(), ["WRITE tag", "WRITE push"])
+                else:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertNotIn("WRITE", result.stdout)
 
     def test_v41_old_executor_selection_gate_accepts_v5_manifest(self) -> None:
         """Freeze the v4.1 manifest gate needed for the major-version bridge.

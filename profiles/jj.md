@@ -1,94 +1,94 @@
 # jj Profile：发布事务确认与验证
 
-> 本文件规定 Jujutsu 下发布事务的准备与验证方式，是 `core/policy.md` 的
-> profile 层。发布事务的远端写入（创建并 push tag、创建 Release）以
-> [profiles/git.md](git.md) 为准；jj 侧负责确认候选 change 对应的 Git
-> commit、检查远端状态、固定精确 SHA 与发布后验证。
->
-> `v1` 兼容线已冻结：tag-only 发布不推进稳定 bookmark、不执行 @v1 smoke、
-> 不要求 v1 与候选对齐。
+> 本文件是 [Core Policy](../core/policy.md) 的 Jujutsu profile：jj 解析候选
+> change，Git transport 创建 annotated tag 和推送，gh 创建 Release。
+> 采用项目只需本 Profile 与已安装的 Core，不依赖另一个 Profile 或上游文档。
+> Git transport 必须能访问当前 jj 仓库的 Git 元数据；不可用时停止并报告限制，
+> 不为发布擅自初始化或转换仓库。
 
-## 职责
+## 发布约束
 
-- 确认候选 change 对应的 Git commit 等于最新 `origin/main`；
-- 检查远端状态与 tag 对应 commit；
-- 禁止通过含糊 revision 创建发布；
-- 发布前固定精确 commit SHA；
-- 发布后验证 tag 和 Release 对齐（不涉及 v1）。
+- 候选 change 解析为完整 Git commit SHA，且等于最新 `origin/main`。
+- 顺序：创建并 push tag → 固定 tag 消费者 smoke test → 创建 Release → 远端验证。
+- `v1` 兼容线冻结：不推进稳定 bookmark，不执行 @v1 smoke，不要求 v1 与候选对齐。
+- 授权、失效条件、部分失败恢复和最终审核要素以 `core/policy.md` 为准。
+  人类批准精确完整事务后连续执行；不得逐步重复确认，也不得盲目重试。
 
-## 阶段 A：发布前检查（只读）
+## 阶段 A：自主准备
+
+只读检查、候选解析、验证和审核材料准备不需要逐步批准。
 
 ```bash
 jj git fetch --remote origin
-
-# 1. 候选 change → 精确 Git commit，并确认其等于最新 origin/main：
-#    禁止用 @、main、工作副本等含糊 revision 作为发布候选
-jj log -r <candidate-change> --no-graph -T 'commit_id'
+jj --no-pager log -r <candidate-change> --no-graph -T 'commit_id'
 git ls-remote origin "refs/heads/main"
-
-# 2. 本地 tag 与远端 tag
-jj tag list
 git ls-remote --tags origin
-
-# 3. 候选 commit 存在于远端
-git ls-remote origin | grep "<candidate-sha>"
+jj tag list
 ```
 
-发布前必须把候选解析并固定为完整 commit SHA（必须等于最新 `origin/main`），
-写入最终发布审核（`profiles/git.md` 的 `APPROVED_CANDIDATE_SHA`）；任何
-含糊 revision（`@`、`main`、change ID 前缀）都不得出现在审核中作为发布
-目标。tag-only 发布不需要记录稳定分支 SHA。
+固定候选为 `APPROVED_CANDIDATE_SHA`；审核中不得用 `@`、`main` 或 change ID
+前缀代替完整 SHA。审核列明 `TAG`、`NOTES_FILE`、完整写操作、顺序、验证结果、
+当前远端状态和停止条件。目标 tag 在本地和远端都必须不存在；通过 gh 核实
+目标 Release 不存在。网络、认证或查询失败不是“不存在”的证据，应停止核实。
 
-## 阶段 C：执行（jj 侧）
+## 阶段 C：执行已批准事务
 
-jj 侧不承担远端发布写入；创建并 push tag、创建 Release 使用
-`profiles/git.md` 的命令。若审核已批准使用 jj 本地 tag 工具：
-
-```bash
-# 本地 tag 已存在即停止（jj tag set 会静默移动已存在的 tag，
-# 与"禁止覆盖现有 tag"冲突；存在时由人类判断，不自行移动）
-jj tag list "$TAG" 2>/dev/null | grep -q . \
-  && { echo "tag already exists locally: $TAG" >&2 && exit 1; } || true
-jj tag set "$TAG" -r <candidate-sha>
-```
-
-远端 tag 的 push 仍通过 Git 完成：
+仅在人类批准后执行。写入前重新核验 SHA、tag 与 Release 未变化；任何差异或
+检查失败均按 Policy 停止重新审核。下列命令不是免除这些检查的快捷通道。
 
 ```bash
+set -euo pipefail
+APPROVED_CANDIDATE_SHA="${APPROVED_CANDIDATE_SHA:?set the approved full commit SHA}"
+TAG="${TAG:?set the approved release tag}"
+NOTES_FILE="${NOTES_FILE:?set the approved notes file}"
+git check-ref-format "refs/tags/$TAG"
+git fetch origin
+CUR_MAIN=$(git ls-remote origin "refs/heads/main" | awk '{print $1}')
+[ -n "$CUR_MAIN" ] && [ "$CUR_MAIN" = "$APPROVED_CANDIDATE_SHA" ] || exit 1
+REMOTE_TAG=$(git ls-remote --tags origin "refs/tags/$TAG")
+LOCAL_TAG=$(git tag --list "$TAG")
+[ -z "$REMOTE_TAG" ] && [ -z "$LOCAL_TAG" ] || exit 1
+# 成功查询全部 Release 后才可判定不存在；认证、网络、分页失败均退出。
+REPOSITORY=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
+[ -n "$REPOSITORY" ] || exit 1
+RELEASE_TAGS=$(gh api "repos/$REPOSITORY/releases" --paginate --jq '.[].tag_name')
+if printf '%s\n' "$RELEASE_TAGS" | grep -Fxq -- "$TAG"; then
+  echo "release already exists: $TAG" >&2
+  exit 1
+fi
+git tag -a "$TAG" -m "Release $TAG" "$APPROVED_CANDIDATE_SHA"
 git push origin "$TAG"
 ```
+
+现在运行审核中列明的**固定 tag 消费者 smoke test**并检查退出码与结果。
+没有实际成功证据（仅有注释、计划或构造命令不算通过）时，不得运行以下命令：
+
+```bash
+gh release create "$TAG" --verify-tag --title "$TAG" --notes-file "$NOTES_FILE"
+```
+
+不使用 `jj tag set` 替代上述 annotated tag 创建：它会移动已有 tag，也不满足
+本发布路径的 annotated tag 契约。已批准操作部分成功时先核验远端状态，不猜测、
+不自动删除残留 tag、不用强推恢复。
 
 ## 阶段 D：发布后验证
 
 ```bash
+set -euo pipefail
 jj git fetch --remote origin
-
-# 1. tag 指向候选 commit（annotated tag 需用 peeled 引用取 commit SHA，
-#    完整命令见 profiles/git.md 阶段 D）
-jj tag list
-git ls-remote --tags origin "refs/tags/$TAG^{}"
-
-# 2. Release 状态（tagName == $TAG 且已发布非 Draft；不要求
-#    targetCommitish == 候选，对齐以 peeled SHA 为准）
+TAG_COMMIT=$(git ls-remote --tags origin "refs/tags/$TAG^{}" | awk '{print $1}')
+[ "$TAG_COMMIT" = "$APPROVED_CANDIDATE_SHA" ] || exit 1
 gh release view "$TAG" --json tagName,isDraft,isPrerelease
-
-# 3. 候选 commit 存在且可解析
-jj log -r <candidate-sha> --no-graph -T 'commit_id'
+jj --no-pager log -r "$APPROVED_CANDIDATE_SHA" --no-graph -T 'commit_id'
 ```
 
-必须确认：
-
-- tag 的 peeled commit SHA 等于候选 commit（见 [profiles/git.md](git.md) 阶段 D）；
-- Release 的 `tagName` 等于 tag 且 `isDraft == false`；
-- 不存在意外 tag 或额外修改；
-- `v1` 兼容线保持冻结（不参与本发布验证）。
-
-任何差异都构成停止条件：停止并重新提交审核，不猜测、不重试、不掩盖。
+核对 peeled SHA 等于候选、`tagName == TAG`、`isDraft == false`、Notes 正确，
+无审核范围外 ref 或修改；`v1` 保持冻结。任何差异停止并重新审核。
 
 ## 禁止
 
-- 用含糊 revision（`@`、`main`、change ID 前缀）创建发布；
-- 未固定候选 commit SHA 就请求发布授权；
-- 跳过发布后验证；
-- 推进或移动稳定 bookmark（`v1` 兼容线冻结；需要强推时按
-  `core/policy.md` 停止并重新审核）。
+- 用含糊 revision 或非最新 `origin/main` 的候选发布。
+- 未批准就创建 tag、push 或创建 Release，或 smoke 未通过就创建 Release。
+- 强推、覆盖/移动/删除已发布 tag、擅自推进稳定 bookmark。
+- 跳过远端验证，或把查询失败、计划、注释当作成功证据。
+- 违反 Core Policy 的授权失效与部分失败边界。

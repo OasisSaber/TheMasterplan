@@ -14,3 +14,5 @@ repository abstention rule.
 Load only task-relevant guidance, then continue within the authorized scope
 until the repository Completion Contract is satisfied or a genuine human
 decision boundary is reached.
+
+Continue safe local work without per-step approval; inspect unknown checks first.
