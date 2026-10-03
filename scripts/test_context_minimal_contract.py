@@ -192,6 +192,13 @@ class ContextMinimalContractTests(unittest.TestCase):
             if profile == "jj":
                 self.assertNotIn("profiles/git.md", profile_body)
             self.assertNotIn("docs/release-channels.md", profile_body)
+            installed_workflow = (project / "core/workflow.md").read_text(encoding="utf-8")
+            self.assertIn("### 1.1 团队角色", installed_workflow)
+            self.assertIn("### 1.3 责任交接", installed_workflow)
+            self.assertIn("各执行者维护自己的任务 ref", installed_workflow)
+            state = json.loads((project / ".themasterplan/state.json").read_text(encoding="utf-8"))
+            self.assertNotIn("coordinator", state)
+            self.assertNotIn("handoff", state)
             return (project / "AGENTS.md").read_text(encoding="utf-8")
 
     def test_adopted_router_has_no_dead_profile_link(self) -> None:

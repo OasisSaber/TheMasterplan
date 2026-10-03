@@ -6,9 +6,10 @@
 ## 项目事实
 
 - 项目：TheMasterplan
-- 定位：单一交付责任人的轻量 AI 辅助代码交付治理协议。
+- 定位：多人协作的轻量 AI 辅助代码交付治理协议；按任务明确协调、执行、审阅与决策责任。
 - 默认分支：`main`
 - 权威验证入口：`bash scripts/check.sh`
+- 本仓库 PR 事件由该入口要求 `Collaboration` 记录；结构通过不是身份或真实 review 批准。
 - 当前稳定中央 Actions：`OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v5.0.0`
 - v1 冻结兼容线：`OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1`
 - 合并策略：默认由人类决定 Squash Merge；微小修复快速通道仅按
@@ -33,6 +34,7 @@
 | 当前任务需要 | 读取 |
 | --- | --- |
 | 普通实现、修复、文档、测试、PR 交付 | `core/workflow.md` |
+| 多人分工、并行依赖、责任交接与独立审阅 | `core/workflow.md` |
 | merge / release / deploy / 远端删除 / 已发布历史重写 | `core/policy.md` |
 | Git 发布或 Tag 操作 | `profiles/git.md` |
 | Jujutsu 发布或 Tag 操作 | `profiles/jj.md` |

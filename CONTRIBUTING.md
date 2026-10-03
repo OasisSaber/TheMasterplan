@@ -2,6 +2,21 @@
 
 仅在修改工作流本身时维护本仓库。开始前读取 [AGENTS.md](AGENTS.md)，并在以下三条任务路径中选择一条。
 
+## 团队协作
+
+按 [Core Workflow](core/workflow.md) §1.1–1.3 记录角色、拆分和交接。不同成员可
+各自实现并提交自己的子任务，不把仓库所有任务串行锁在一个人的会话中。
+以下 jj 命令描述一个交付单元；Git-only 成员使用独立任务分支与隔离 worktree，
+不为参与协作强制转换 VCS。共享文件/ref 先协调，不同时写入。
+
+协作记录采用 PR 模板的 `Collaboration` 节：稳定成员标识、当前协调人、执行者、
+独立审阅者、完整候选 SHA、review 状态/证据、依赖与交接链接。草稿可以明确
+`pending`/`unassigned`，这表示未完成审阅，不能报告可合并。
+
+异步人类决定也可作为授权来源，核验身份与权限并按 [Core Policy](core/policy.md)
+记录范围；不要让所有人回到原执行者的聊天重新批准。相互矛盾的授权不按留言
+先后取胜，停止受影响写入并由有权人类解决。
+
 ## 支持环境
 
 - Jujutsu `0.43.0` 的本文档命令已验证；更高版本必须在采用时重新完成烟雾测试。
@@ -41,7 +56,7 @@ jj bookmark create codex/issue-<number>-<short-name> -r @
 
 ## 小型低风险任务
 
-先在当前会话中取得明确人类授权：
+先取得可核验的明确人类授权（当前会话或任务 Issue/PR）：
 
 ```bash
 jj new main -m "authorized task: <single outcome>"
@@ -63,7 +78,7 @@ jj bookmark create codex/task-<short-name> -r @
 
 ## 实现与验证
 
-只修改任务范围内的文件，不混入或覆盖来源不明的修改。Jujutsu 没有“当前 bookmark”；任务 bookmark 会在其目标 change 被重写时自动跟随，但创建新的子 change 后不会自动前进。保持一个任务只有一个 change，并在验证前确认 bookmark 仍指向该 change：
+只修改任务范围内的文件，不混入或覆盖来源不明的修改。Jujutsu 没有“当前 bookmark”；任务 bookmark 会在其目标 change 被重写时自动跟随，但创建新的子 change 后不会自动前进。保持一个交付单元只有一个 change，并在验证前确认 bookmark 仍指向该 change；多人并行子任务分别维护自己的 change/bookmark，不共享写入：
 
 ```bash
 jj status
@@ -118,7 +133,7 @@ jj git fetch --remote origin
 gh pr create --draft --base main --head <task-bookmark>
 ```
 
-Pull Request 应说明关联 Issue 或明确授权、实现结果、变更内容、验证证据、已知限制和未覆盖内容。Agent 完成自审后可以 push、创建或更新 Pull Request。只有人类可以决定是否 Squash Merge；Agent 不得未经批准 merge 或 release。发布（推进稳定分支、创建 tag、创建 Release 等）采用单一最终发布审核：授权语义见 [core/policy.md](core/policy.md)，Git 与 jj 下的安全执行方式见 [profiles/git.md](profiles/git.md) 与 [profiles/jj.md](profiles/jj.md)。
+Pull Request 应说明关联 Issue 或明确授权、实现结果、变更内容、验证证据、协作状态、已知限制和未覆盖内容。执行者完成本单元自审后可按授权 push、创建或更新 Draft PR；团队须经过独立审阅，不把自审等同于 review。只有有权人类可以决定是否 Squash Merge；Agent 不得未经批准 merge 或 release，批准也不绕过 CI/required reviews。发布采用单一最终发布审核：授权语义见 [core/policy.md](core/policy.md)，Git 与 jj 下的安全执行方式见 [profiles/git.md](profiles/git.md) 与 [profiles/jj.md](profiles/jj.md)。
 
 微小修复快速通道（见上文）不创建 Pull Request：会话内明确授权后，将任务 change 压缩为单一 commit 直接推入 `main` 并一次性汇报；判定存疑或仓库分支保护不允许直接推送时回退本 PR 流程。
 
@@ -196,10 +211,11 @@ jj git push --deleted --remote origin
 
 创建或更新 Pull Request 前确认：
 
-- 当前 change 和 bookmark 只对应一个任务；
+- 当前 change 和 bookmark 只对应一个交付单元，依赖与集成责任已记录；
 - 基线来自最近一次 fetch 后无冲突的 `main`；
 - 权威验证通过，完整 diff 已阅读；
 - PR 正文记录真实验证结果、限制和未覆盖内容；
+- 协作记录区分 pending 与实际完成的独立审阅；真实 GitHub review/保护门未满足时不宣称可合并；
 - 未执行 merge、release、远端删除或未经授权的已发布历史重写。
 
 Jujutsu bookmark 与 push 的详细语义以[官方 bookmark 文档](https://docs.jj-vcs.dev/latest/bookmarks/)和[官方 CLI reference](https://docs.jj-vcs.dev/latest/cli-reference/)为准；本文件只描述本仓库在 Jujutsu `0.43.0` 上核对过的单 change 生命周期，更高版本采用前必须重新验证命令语义。

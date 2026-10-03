@@ -2,12 +2,13 @@
 
 > Context-minimal AI-assisted delivery governance for GitHub and Jujutsu.
 
-TheMasterplan 是一个面向代码仓库的轻量交付治理协议：让 **一个主交付责任人**
-控制最终范围、VCS、验证、Pull Request 与发布交接，同时让 Agent 只加载当前任务
-真正需要的上下文。
+TheMasterplan 是一个面向代码仓库的轻量交付治理协议：让**多人按任务协作**，
+明确协调人、执行者、独立审阅者与有权决策的人类；同时让 Agent 只加载当前任务
+真正需要的上下文。协调人可以交接，不垄断所有人的实现、分支或审批权。
 
 它不是 Agent 运行时、编排平台、项目管理系统或自动发布机器人。研究、实现和检查
-可以由多个模型或子代理参与，但最终交付仍由一个责任人收敛。
+可以由多位人类及其 Agent 并行参与。每个可合并任务有一位当前协调人维护状态，
+各执行者负责自己的交付单元；团队按项目权限决定审阅、合并和发布。
 
 **Agent 从 [AGENTS.md](AGENTS.md) 开始。人类从本文或
 [采用指南](docs/adoption-guide.md) 开始。**
@@ -42,17 +43,21 @@ Context Router
   ↓
 只加载当前任务需要的 workflow / policy / VCS / update 文档
   ↓
-实现 → 相关验证 → 修复失败 → 最终 diff
+  分工 / 隔离并行 → 各单元验证 → 集成验证 → 独立审阅
   ↓
 Pull Request / 已授权的微小修复快速通道
   ↓
-人类决定 merge / release
+  有权人类决定 merge / release
 ```
 
 如果另一个系统已经拥有当前任务的 worker/session、workspace、PR/CI-review 或
 release 生命周期，TheMasterplan 进入 `ABSTAINED`，不与外部工作流竞争治理权。
 完整边界见
 [docs/external-workflow-abstention.md](docs/external-workflow-abstention.md)。
+
+多人使用同一协议、不同成员分别负责实现/审阅/审批，不构成外部治理冲突。
+分工、依赖、异步授权、交接与审阅门见 [core/workflow.md](core/workflow.md)；
+审批角色与授权冲突见 [core/policy.md](core/policy.md)。
 
 ## 快速采用
 

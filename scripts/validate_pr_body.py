@@ -2,6 +2,8 @@
 """Mechanically validate the TheMasterplan pull request template."""
 
 import os
+import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -20,6 +22,70 @@ REQUIRED_REVIEW_ITEMS = (
     "必要验证已通过",
     "没有遗留调试代码、临时文件或缓存",
 )
+COLLABORATION_FIELDS = (
+    "Mode", "Coordinator", "Contributors", "Reviewer", "Candidate",
+    "Review", "Evidence", "Dependencies", "Handoff",
+)
+IDENTITY = re.compile(r"(?:@[A-Za-z0-9][A-Za-z0-9-]*|[A-Za-z0-9][A-Za-z0-9_.:-]*)")
+FULL_SHA = re.compile(r"[0-9a-fA-F]{40}")
+UNASSIGNED = {"none", "unassigned", "not-required", "pending"}
+
+
+def identity_key(value):
+    return value.lower().removeprefix("@")
+
+
+def validate_collaboration(body, required=False):
+    """Validate declared records only, never authenticate a review or permission."""
+    headings = re.findall(r"(?m)^## Collaboration[ \t]*$", body)
+    if not headings:
+        return ["Collaboration is required for this project."] if required else []
+    if len(headings) != 1:
+        return ["Use exactly one Collaboration section."]
+    content = section(body, "Collaboration") or ""
+    if re.search(r"(?m)^[ \t]*(?:`{3,}|~{3,})", content):
+        return ["Collaboration records must not be hidden in code fences."]
+    values, errors = {}, []
+    for field in COLLABORATION_FIELDS:
+        matches = re.findall(rf"(?m)^- {field}:[ \t]*(.*)$", content)
+        if len(matches) != 1 or not matches[0].strip():
+            errors.append(f"Collaboration requires one nonempty {field}.")
+        else:
+            values[field] = matches[0].strip()
+            if "<" in values[field] or ">" in values[field]:
+                errors.append(f"Remove Collaboration placeholder from {field}.")
+    if errors:
+        return errors
+    if values["Mode"] not in ("solo", "team"):
+        errors.append("Collaboration Mode must be solo or team.")
+    for field in ("Coordinator", "Reviewer"):
+        if not IDENTITY.fullmatch(values[field]):
+            errors.append(f"Collaboration {field} requires a stable identity.")
+    if identity_key(values["Coordinator"]) in UNASSIGNED:
+        errors.append("Coordinator must be assigned.")
+    raw_contributors = [part.strip() for part in values["Contributors"].split(",")]
+    contributors = [identity_key(part) for part in raw_contributors]
+    if (not all(IDENTITY.fullmatch(part) for part in raw_contributors)
+            or len(set(contributors)) != len(contributors)
+            or any(part in UNASSIGNED for part in contributors)):
+        errors.append("Contributors must be distinct stable identities, comma-separated.")
+    if values["Review"] not in ("pending", "complete", "not-required"):
+        errors.append("Review must be pending, complete or not-required.")
+    if values["Mode"] == "team":
+        if values["Review"] == "not-required":
+            errors.append("Team work cannot waive independent review.")
+    if identity_key(values["Reviewer"]) in contributors:
+        errors.append("Reviewer must be independent of Contributors.")
+    if values["Candidate"] != "pending" and not FULL_SHA.fullmatch(values["Candidate"]):
+        errors.append("Candidate must be a full commit SHA or pending.")
+    if values["Review"] == "complete":
+        if identity_key(values["Reviewer"]) in UNASSIGNED:
+            errors.append("Complete review requires an assigned Reviewer.")
+        if not FULL_SHA.fullmatch(values["Candidate"]):
+            errors.append("Complete review requires the full reviewed candidate SHA.")
+        if not re.fullmatch(r"https://\S+", values["Evidence"]):
+            errors.append("Complete review requires an HTTPS evidence reference.")
+    return errors
 
 
 def section(body, heading):
@@ -27,7 +93,7 @@ def section(body, heading):
     return match.group(1).strip() if match else None
 
 
-def validate(body):
+def validate(body, require_collaboration=False):
     errors = []
     visible_body = HTML_COMMENT.sub("", body)
     issue = re.search(r"(?m)^- Issue:[ \t]*(.*)$", visible_body)
@@ -66,12 +132,31 @@ def validate(body):
                 f"Agent self-review item must be checked: {item}."
                 if present else f"Agent self-review item is missing: {item}."
             )
+    errors.extend(validate_collaboration(visible_body, require_collaboration))
     return errors
 
 
 def main():
-    body = Path(sys.argv[1]).read_text(encoding="utf-8") if len(sys.argv) == 2 else os.environ.get("PR_BODY", sys.stdin.read())
-    errors = validate(body)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("body_file", nargs="?")
+    parser.add_argument("--event-file", help="Read the PR body from a GitHub event JSON file")
+    parser.add_argument("--require-collaboration", action="store_true")
+    args = parser.parse_args()
+    if args.body_file and args.event_file:
+        parser.error("body_file and --event-file are mutually exclusive")
+    if args.event_file:
+        try:
+            event = json.loads(Path(args.event_file).read_text(encoding="utf-8"))
+            body = event["pull_request"]["body"]
+            if not isinstance(body, str):
+                raise ValueError("pull_request.body must be a string")
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            parser.error(f"Unable to read PR event: {error}")
+    elif args.body_file:
+        body = Path(args.body_file).read_text(encoding="utf-8")
+    else:
+        body = os.environ["PR_BODY"] if "PR_BODY" in os.environ else sys.stdin.read()
+    errors = validate(body, args.require_collaboration)
     if errors:
         print("Pull Request body validation failed:", file=sys.stderr)
         for error in errors:

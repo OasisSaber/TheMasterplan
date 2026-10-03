@@ -53,7 +53,8 @@ jj new main -m "authorized task: <single outcome>"
 jj bookmark create codex/task-<short-name> -r '@'
 ```
 
-一个任务保持一个 change。无 Issue 时不得伪造编号。
+一个交付单元保持一个 change；团队并行子任务分别维护自己的 change/bookmark，
+不共享写入。拆分、依赖与交接按 `core/workflow.md`。无 Issue 时不得伪造编号。
 
 ## 实现、验证与 diff
 

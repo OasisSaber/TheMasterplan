@@ -61,6 +61,21 @@ body:
     validations:
       required: true
 
+  - type: textarea
+    id: collaboration
+    attributes:
+      label: 协作分工与交接
+      description: 记录单人/团队模式、协调人、执行单元负责人、独立审阅者、依赖与授权来源；尚未确定的角色写明待指派。
+      placeholder: |
+        - 模式：团队 / 单人
+        - 当前协调人：
+        - 交付单元 / 执行者 / 文件边界 / ref / 依赖：
+        - 独立审阅者：待指派
+        - 有权决策角色与授权来源：
+        - 交接记录：无 / 链接
+    validations:
+      required: true
+
   - type: checkboxes
     id: authority_boundary
     attributes:
