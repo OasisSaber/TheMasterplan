@@ -237,7 +237,7 @@ class ReviewPathAndStateTests(unittest.TestCase):
             for relative in ("link", "linked-dir/file", "linked-dir/new"):
                 with self.subTest(relative=relative), self.assertRaises(TheMasterplanError):
                     safe_join(root, relative)
-            self.assertEqual(safe_join(root, "real/file"), root / "real/file")
+            self.assertEqual(safe_join(root, "real/file"), root.resolve() / "real/file")
 
     def test_cr03_windows_ambiguous_relative_paths_rejected(self):
         for relative in ("C:README.md", "file:stream", "core\\policy.md", "", "."):

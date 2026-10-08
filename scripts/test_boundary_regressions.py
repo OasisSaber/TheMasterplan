@@ -159,7 +159,7 @@ class BoundaryPathTests(unittest.TestCase):
                     util.safe_join(Path(tmp), relative)
             for relative in (".themasterplan/state.json", "core/policy.md", "NULsafe.txt",
                              "COM10.txt", "目录/文件.md"):
-                self.assertTrue(util.safe_join(Path(tmp), relative).is_relative_to(Path(tmp)))
+                self.assertTrue(util.safe_join(Path(tmp), relative).is_relative_to(Path(tmp).resolve()))
 
     def test_target_file_parent_overlap_is_rejected_in_any_order(self):
         for paths in (("file", "file/nested"), ("file/nested", "file"),
