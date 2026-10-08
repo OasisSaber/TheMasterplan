@@ -13,6 +13,8 @@ from .util import (
     sha256_of_file,
     write_bytes_atomic,
     write_json_atomic,
+    validate_relative_path,
+    validate_target_paths,
 )
 
 BLOCK_BEGIN = "<!-- THEMASTERPLAN:BEGIN MANAGED -->"
@@ -76,8 +78,8 @@ def _validate_plan(plan: dict) -> None:
         destination = operation["destination"]
         if not isinstance(destination, str) or not destination:
             raise ApplyError("plan destination must be a non-empty string")
-        safe_join(Path("."), source)
-        safe_join(Path("."), destination)
+        validate_relative_path(source)
+        validate_relative_path(destination)
         if destination in seen:
             raise ApplyError(f"plan has duplicate destination: {destination}")
         seen.add(destination)
@@ -102,6 +104,7 @@ def _validate_plan(plan: dict) -> None:
             raise ApplyError(
                 f"unknown classification: {operation['classification']}"
             )
+    validate_target_paths([op["destination"] for op in files] + [".themasterplan/state.json"])
 
 
 def _read_self(relative: str) -> bytes:
@@ -456,6 +459,9 @@ def apply_adopt(
     from .source import package_manifest
     selected = select_files(package_manifest(source.package_root), plan["selection"]["profile"],
                             source.package_root)
+    validate_target_paths({op["destination"] for op in plan["files"]} |
+                          {entry["destination"] for entry in executor_entries(source)} |
+                          {".themasterplan/state.json"})
     planned = {op["destination"]: op for op in plan["files"]}
     mapped = {op["destination"]: op for op in selected}
     for relative in required_paths(plan["selection"]["profile"]):

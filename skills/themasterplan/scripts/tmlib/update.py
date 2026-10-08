@@ -15,12 +15,14 @@ from .apply import (
     _sha256_bytes,
     executor_entries,
 )
-from .manifest import ALLOWED_OWNERSHIPS, FULL_SHA_RE, select_files
+from .manifest import ALLOWED_OWNERSHIPS, FULL_SHA_RE, required_paths, select_files
 from .source import Source, package_manifest
 from .util import (
     TheMasterplanError,
     read_json,
     validate_state,
+    validate_relative_path,
+    validate_target_paths,
     is_volatile_executor_artifact,
     safe_join,
     sha256_of_block,
@@ -115,6 +117,18 @@ def plan_update(project_root: Path, source: Source, state: dict) -> dict:
     profile = selection.get("profile")
     if not isinstance(profile, str):
         raise UpdateError("state selection missing profile")
+    closure_issues = []
+    required_modified: set[str] = set()
+    for relative in required_paths(profile):
+        record = _managed_entry(state, relative)
+        if record is None or record["ownership"] != "managed-replace":
+            raise UpdateError(f"broken installed closure, explicit recovery required: {relative}")
+        local = _local_hash(project_root, relative, "managed-replace")
+        if local is None:
+            raise UpdateError(f"missing required installed file: {relative}")
+        if local != record["installed_sha256"]:
+            closure_issues.append(f"modified required installed file: {relative}")
+            required_modified.add(relative)
 
     # v5 removes the Adapter abstraction. A v4 generic Adapter is a known
     # no-op and is normalized away. Unknown historical values remain
@@ -161,8 +175,11 @@ def plan_update(project_root: Path, source: Source, state: dict) -> dict:
         and not entry["destination"].startswith(".themasterplan/bin/")
     ]
     entries.extend(executor_entries(source))
+    validate_target_paths(set(state["managed_files"]) |
+                          {entry["destination"] for entry in entries} |
+                          {".themasterplan/state.json"})
     operations: list[dict] = []
-    stop_conditions: list[str] = []
+    stop_conditions: list[str] = closure_issues
     notes: list[str] = []
 
     for entry in entries:
@@ -191,6 +208,12 @@ def plan_update(project_root: Path, source: Source, state: dict) -> dict:
             raise UpdateError(f"package source missing: {entry['source']}")
         source_hash = sha256_of_file(source_target)
         operation["source_sha256"] = source_hash
+
+        if destination in required_modified:
+            operation["classification"] = "LOCAL_MODIFIED"
+            operation["observed_sha256"] = local
+            operations.append(operation)
+            continue
 
         if local is None:
             if recorded is None:
@@ -325,7 +348,7 @@ def _validate_update_plan(plan: dict) -> None:
         destination = operation["destination"]
         if not isinstance(destination, str) or not destination:
             raise UpdateError("destination must be non-empty")
-        safe_join(Path("."), destination)
+        validate_relative_path(destination)
         if destination in seen:
             raise UpdateError(f"duplicate destination: {destination}")
         seen.add(destination)
@@ -347,7 +370,7 @@ def _validate_update_plan(plan: dict) -> None:
                 raise UpdateError(
                     f"{classification} requires a package source"
                 )
-            safe_join(Path("."), source)
+            validate_relative_path(source)
             _validate_hash(
                 operation.get("source_sha256"),
                 f"{destination}.source_sha256",
@@ -361,6 +384,7 @@ def _validate_update_plan(plan: dict) -> None:
                 operation.get("observed_sha256"),
                 f"{destination}.observed_sha256",
             )
+    validate_target_paths([op["destination"] for op in files] + [".themasterplan/state.json"])
 
 
 def _check_update_target(project_root: Path, operation: dict) -> None:
