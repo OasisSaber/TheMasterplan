@@ -12,6 +12,7 @@ import re
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urlsplit, parse_qs
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -27,6 +28,9 @@ RELEASES_URL = (
     "https://api.github.com/repos/{repository}/releases?per_page=30"
 )
 USER_AGENT = "themasterplan-update-check"
+MAX_RELEASE_PAGES = 100
+MAX_RELEASES = 3000
+MAX_METADATA_BYTES = 2 * 1024 * 1024
 
 
 class UpdateCheckError(TheMasterplanError):
@@ -109,19 +113,38 @@ def read_current_identity(project_root: Path) -> ReleaseIdentity | None:
 
 
 def _fetch_releases(repository: str, *, timeout: int = 20) -> bytes:
-    request = urllib.request.Request(
-        RELEASES_URL.format(repository=repository),
-        headers={
-            "Accept": "application/vnd.github+json",
-            "User-Agent": USER_AGENT,
-        },
-    )
+    """Fetch the complete bounded release listing, never a partial latest view."""
+    url = RELEASES_URL.format(repository=repository)
+    visited: set[str] = set()
+    releases: list = []
+    total_bytes = 0
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = response.read(2 * 1024 * 1024 + 1)
-            if len(payload) > 2 * 1024 * 1024:
-                raise UpdateCheckError("release metadata exceeds safety limit")
-            return payload
+        for page_number in range(1, MAX_RELEASE_PAGES + 1):
+            if url in visited:
+                raise UpdateCheckError("release pagination loop")
+            visited.add(url)
+            request = urllib.request.Request(url, headers={
+                "Accept": "application/vnd.github+json", "User-Agent": USER_AGENT})
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                payload = response.read(MAX_METADATA_BYTES + 1)
+                total_bytes += len(payload)
+                if total_bytes > MAX_METADATA_BYTES:
+                    raise UpdateCheckError("release metadata exceeds safety limit")
+                try:
+                    page = json.loads(payload.decode("utf-8"))
+                except (UnicodeError, ValueError) as exc:
+                    raise UpdateCheckError("invalid GitHub release page") from exc
+                if not isinstance(page, list):
+                    raise UpdateCheckError("invalid GitHub release page")
+                releases.extend(page)
+                if len(releases) > MAX_RELEASES:
+                    raise UpdateCheckError("release pagination item limit exceeded")
+                next_url = _next_release_page(response.headers.get("Link"), repository,
+                                              expected_page=page_number + 1)
+            if next_url is None:
+                return json.dumps(releases).encode("utf-8")
+            url = next_url
+        raise UpdateCheckError("release pagination page limit exceeded")
     except urllib.error.HTTPError as exc:
         if exc.code in (403, 429):
             raise UpdateCheckError("GitHub API rate limit exceeded") from exc
@@ -130,6 +153,33 @@ def _fetch_releases(repository: str, *, timeout: int = 20) -> bytes:
         ) from exc
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         raise UpdateCheckError("GitHub release query failed") from exc
+
+
+def _next_release_page(link: str | None, repository: str, *, expected_page: int) -> str | None:
+    if not link:
+        return None
+    next_urls = []
+    for item in link.split(","):
+        match = re.fullmatch(r'\s*<([^>]+)>\s*;\s*rel="([a-z ]+)"\s*', item)
+        if match is None:
+            raise UpdateCheckError("invalid release pagination Link")
+        if "next" in match[2].split():
+            next_urls.append(match[1])
+    if len(next_urls) > 1:
+        raise UpdateCheckError("ambiguous release pagination Link")
+    if not next_urls:
+        return None
+    url = next_urls[0]
+    parsed = urlsplit(url)
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    if (parsed.scheme != "https" or parsed.netloc != "api.github.com"
+            or parsed.path != f"/repos/{repository}/releases" or parsed.fragment
+            or set(query) - {"page", "per_page"}
+            or len(query.get("page", [])) != 1
+            or not query["page"][0].isdigit() or int(query["page"][0]) != expected_page
+            or query.get("per_page", ["30"]) != ["30"]):
+        raise UpdateCheckError("unsafe release pagination URL")
+    return url
 
 
 def _pick_latest_stable(
@@ -223,6 +273,8 @@ def _read_cache(
         return None
     if not isinstance(data, dict):
         return None
+    if data.get("releases_complete") is not True:
+        return None
     if data.get("repository") != repository:
         return None
     if bool(data.get("include_prerelease")) != include_prerelease:
@@ -264,6 +316,7 @@ def _write_cache(
                 "checked_at": time.time(),
                 "repository": repository,
                 "include_prerelease": include_prerelease,
+                "releases_complete": True,
                 "latest": latest,
             },
         )

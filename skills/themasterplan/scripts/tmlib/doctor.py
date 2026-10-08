@@ -6,11 +6,11 @@ import re
 from pathlib import Path
 
 from .apply import EXECUTOR_FILES
-from .manifest import FULL_SHA_RE
+from .manifest import FULL_SHA_RE, required_paths
 from .util import (
     TheMasterplanError,
     is_volatile_executor_artifact,
-    read_json,
+    load_state,
     safe_join,
     sha256_of_block,
     sha256_of_file,
@@ -51,10 +51,10 @@ def _deduplicate(items: list[str]) -> list[str]:
     return list(dict.fromkeys(items))
 
 
-def doctor(project_root: Path) -> dict:
+def _doctor(project_root: Path) -> dict:
     issues: list[str] = []
     suggestions: list[str] = []
-    state_path = project_root / ".themasterplan/state.json"
+    state_path = safe_join(project_root, ".themasterplan/state.json")
     if not state_path.is_file():
         return {
             "ok": False,
@@ -63,7 +63,7 @@ def doctor(project_root: Path) -> dict:
             "suggestions": ["run plan-adopt + apply-adopt"],
         }
     try:
-        state = read_json(state_path)
+        state = load_state(state_path)
     except TheMasterplanError as exc:
         return {
             "ok": False,
@@ -112,7 +112,7 @@ def doctor(project_root: Path) -> dict:
                 )
                 suggestions.append(f"restore {validation_path}")
 
-    for relative in CORE_PATHS:
+    for relative in required_paths(state["selection"]["profile"]):
         target = safe_join(project_root, relative)
         if not target.is_file():
             issues.append(f"missing required: {relative}")
@@ -144,6 +144,9 @@ def doctor(project_root: Path) -> dict:
                 )
 
     bin_root = safe_join(project_root, ".themasterplan/bin")
+    for relative in required_paths(state["selection"]["profile"]):
+        if relative not in managed:
+            issues.append(f"required file not tracked: {relative}")
     for relative in EXECUTOR_FILES:
         destination = f".themasterplan/bin/{relative}"
         target = safe_join(bin_root, relative)
@@ -169,3 +172,11 @@ def doctor(project_root: Path) -> dict:
         "issues": _deduplicate(issues),
         "suggestions": _deduplicate(suggestions),
     }
+
+
+def doctor(project_root: Path) -> dict:
+    try:
+        return _doctor(project_root)
+    except (TheMasterplanError, OSError) as exc:
+        return {"ok": False, "status": "BROKEN", "issues": [str(exc)],
+                "suggestions": ["repair installation state or unsafe paths"]}

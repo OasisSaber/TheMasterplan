@@ -142,6 +142,13 @@ class InspectTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def _write_state(self, state: dict) -> None:
+        # A complete simulated installation includes its selected VCS profile.
+        profile = f"profiles/{state['selection']['profile']}.md"
+        target = self.root / profile
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(b"selected profile\n")
+        state["managed_files"][profile] = {
+            "installed_sha256": sha256_of_file(target), "ownership": "managed-replace"}
         write_json_atomic(self.root / ".themasterplan/state.json", state)
 
     def test_absent_empty_dir(self) -> None:
