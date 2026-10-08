@@ -101,7 +101,7 @@ def plan_adopt(
     # custom validation path never also installs a default scripts/check.sh.
     entries = [
         e
-        for e in select_files(manifest, profile)
+        for e in select_files(manifest, profile, package_root)
         if e["destination"] not in (".github/workflows/check.yml", "scripts/check.sh")
     ]
     if not entries:

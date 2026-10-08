@@ -70,6 +70,7 @@ class ReleaseIdentityTests(unittest.TestCase):
                 project / ".themasterplan/cache/update-check.json",
                 {
                     "checked_at": time.time(),
+                    "releases_complete": True,
                     "repository": REPOSITORY,
                     "include_prerelease": False,
                     "latest": {

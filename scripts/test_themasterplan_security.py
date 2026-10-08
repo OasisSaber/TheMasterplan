@@ -176,6 +176,7 @@ class UpdateSafetyTest(unittest.TestCase):
 
     def test_unchanged_target_changed_after_plan_is_rejected(self) -> None:
         state = self._state_with_policy()
+        write_json_atomic(self.project / ".themasterplan/state.json", state)
         plan = plan_update(self.project, self.source, state)
         policy = next(
             operation
@@ -249,6 +250,13 @@ class UpdateSafetyTest(unittest.TestCase):
             },
             "managed_files": managed_files,
         }
+        managed_files[".themasterplan/bin/themasterplan.py"] = {
+            "source": "<executor>:themasterplan.py",
+            "source_sha256": sha256_of_file(old_exec),
+            "installed_sha256": sha256_of_file(old_exec),
+            "ownership": "managed-replace",
+        }
+        write_json_atomic(self.project / ".themasterplan/state.json", old_state)
         plan = plan_update(self.project, self.source, old_state)
         plan_path = self.project / "executor-plan.json"
         write_json_atomic(plan_path, plan)

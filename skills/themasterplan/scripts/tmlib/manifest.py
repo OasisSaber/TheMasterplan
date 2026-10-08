@@ -23,6 +23,14 @@ REQUIRED_KEYS = (
 FULL_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 REPOSITORY_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 VERSION_RE = re.compile(r"^v\d+\.\d+\.\d+(?:[-+][A-Za-z0-9_.-]+)?$")
+CORE_REQUIRED = ("core/workflow.md", "core/policy.md")
+
+
+def required_paths(profile: str) -> tuple[str, ...]:
+    """Shared minimum installed closure for a selected VCS profile."""
+    if profile not in ("git", "jj"):
+        raise ManifestError(f"unsupported profile: {profile}")
+    return (*CORE_REQUIRED, f"profiles/{profile}.md")
 
 
 class ManifestError(TheMasterplanError):
@@ -55,6 +63,14 @@ def load_manifest(path: Path) -> dict:
     if not isinstance(files, list) or not files:
         raise ManifestError("manifest files must be a non-empty list")
     validate_files(files)
+    if "required" in data and (not isinstance(data["required"], list)
+            or not all(isinstance(p, str) and p for p in data["required"])):
+        raise ManifestError("manifest required must be a list of paths")
+    components = data.get("components")
+    if components is not None and (not isinstance(components, dict)
+            or not isinstance(components.get("profiles"), list)
+            or not all(isinstance(p, str) for p in components["profiles"])):
+        raise ManifestError("manifest components.profiles must be a list of names")
     return data
 
 
@@ -98,14 +114,19 @@ def validate_files(files: list) -> None:
             )
 
 
-def select_files(manifest: dict, profile: str) -> list[dict]:
+def select_files(manifest: dict, profile: str, package_root: Path | None = None) -> list[dict]:
     """Select managed files for the requested VCS profile.
 
     v5 removes the runtime Adapter abstraction. A legacy
     components.adapters field may remain in a distribution manifest only as
     an update-compatibility bridge for v4 executors; v5 selection ignores it.
     """
-    profile_names = set(manifest.get("components", {}).get("profiles", []))
+    components = manifest.get("components")
+    if not isinstance(components, dict) or not isinstance(components.get("profiles"), list):
+        raise ManifestError("manifest components.profiles must be a list")
+    profile_names = components["profiles"]
+    if profile not in profile_names:
+        raise ManifestError(f"manifest does not support profile: {profile}")
     selected: list[dict] = []
     for entry in manifest["files"]:
         destination = entry["destination"]
@@ -118,4 +139,11 @@ def select_files(manifest: dict, profile: str) -> list[dict]:
         if destination.startswith("adapters/"):
             continue
         selected.append(entry)
+    by_destination = {entry["destination"]: entry for entry in selected}
+    for destination in (*required_paths(profile), *manifest.get("required", [])):
+        entry = by_destination.get(destination)
+        if entry is None or entry["ownership"] != "managed-replace":
+            raise ManifestError(f"selected profile requires managed mapping: {destination}")
+        if package_root is not None and not safe_join(package_root, entry["source"]).is_file():
+            raise ManifestError(f"selected profile source missing: {entry['source']}")
     return selected
