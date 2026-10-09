@@ -211,7 +211,7 @@ TheMasterplan 不会把检查或准备当成应用授权：
 
 准备可以连续执行；真正应用、范围扩大与外部交付仍有明确授权门。
 
-## 未发布的边界加固（PR #98 后续）
+## v5.1.0 边界加固（PR #100）
 
 - 普通更新先检查当前 State 的 Core 和选定 Profile 登记、managed-replace
   所有权及磁盘内容 Hash。缺记录、缺文件或 Hash 不符时停止，不把损坏安装
@@ -230,7 +230,8 @@ TheMasterplan 不会把检查或准备当成应用授权：
 - 权限位保护不承诺保留 owner、ACL、xattrs 或 Windows ACL，也不提供 OS 锁或
   跨文件崩溃事务。准备计划到事务快照之间的 chmod 不作为内容漂移判定。
 - 仓库 CI 增加 Windows 回归任务；Linux 权威测试执行 POSIX 权限用例。
-  这些改动尚未发布，不移动任何既有 Tag，也不会自动更新已安装消费者。
+  发布状态以 v5.1.0 Release 与不可变 Tag 实核；这些改动不包含在 v5.0.0 中，
+  不移动任何既有 Tag，也不会自动更新已安装消费者。
 
 Windows 名称策略依据：[Microsoft Learn：Naming Files, Paths, and Namespaces](https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file)。
 补充设备名称参考：[Python os.path.isreserved](https://docs.python.org/3/library/os.path.html#os.path.isreserved)。

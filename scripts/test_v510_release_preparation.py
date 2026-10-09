@@ -37,6 +37,12 @@ class ReleasePreparationTests(unittest.TestCase):
         for number in (94, 96, 98, 100):
             self.assertIn("https://github.com/OasisSaber/TheMasterplan/pull/" + str(number), notes)
 
+    def test_boundary_notes_do_not_freeze_prepublication_status(self):
+        text = (ROOT / "docs/client-update-flow.md").read_text(encoding="utf-8")
+        self.assertIn("## v5.1.0 边界加固（PR #100）", text)
+        self.assertIn("发布状态以 v5.1.0 Release", text)
+        self.assertNotIn("这些改动尚未发布", text)
+
     def test_frozen_compatibility_and_published_baseline_remain_documented(self):
         channels = (ROOT / "docs/release-channels.md").read_text(encoding="utf-8")
         self.assertIn("v5.0.0      历史不可变 Release tag", channels)
