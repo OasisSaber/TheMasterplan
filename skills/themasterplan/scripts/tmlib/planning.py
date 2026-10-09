@@ -12,7 +12,8 @@ from pathlib import Path
 
 from .manifest import ManifestError, select_files
 from .source import DEFAULT_REPOSITORY, Source, package_manifest
-from .util import TheMasterplanError, safe_join, sha256_of_block, sha256_of_file
+from .util import (TheMasterplanError, safe_join, sha256_of_block, sha256_of_file,
+                   validate_target_paths)
 
 MANAGED_BLOCK_TEMPLATE = "distribution/templates/agents-managed-block.md"
 CONSUMER_WORKFLOW_TEMPLATE = "distribution/templates/consumer-workflow.yml"
@@ -101,7 +102,7 @@ def plan_adopt(
     # custom validation path never also installs a default scripts/check.sh.
     entries = [
         e
-        for e in select_files(manifest, profile)
+        for e in select_files(manifest, profile, package_root)
         if e["destination"] not in (".github/workflows/check.yml", "scripts/check.sh")
     ]
     if not entries:
@@ -202,4 +203,6 @@ def plan_adopt(
         ],
         "stop_conditions": stop_conditions,
     }
+    validate_target_paths([op["destination"] for op in plan["files"]] +
+                          [".themasterplan/state.json"])
     return plan

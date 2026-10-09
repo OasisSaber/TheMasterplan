@@ -114,6 +114,34 @@ python .themasterplan/bin/themasterplan.py apply-update \
 repository）。被本地修改的文件不会被覆盖（`LOCAL_MODIFIED` 停止）；上游
 删除的文件仅在本地与记录 hash 一致时删除。
 
+### 未发布源码中的更新安全修复
+
+以下行为属于未发布候选，不移动 `v5.0.0` 或 `v1` Tag，也不会自动更新已经
+安装的旧执行器。采用前先审核并取得精确候选源码，使用该候选中的执行器重新
+生成计划并请求应用批准；仅把 `--source` 换成新包、仍运行旧执行器，不能获得
+新执行器的安全检查。不得未经授权覆盖本地修补的 `.themasterplan/bin/`。
+
+- `plan-update` 逐文件列出完整 Executor Bundle，记录旧/新 Hash 与分类；
+  本地修改、删除或未登记的已有执行器会阻止更新，不提供隐式强制覆盖。
+- `apply-update` 重读安装 State，重新按固定 Source Manifest 推导操作集合，
+  比较来源、选择、完整操作和 State 摘要；旧格式计划或变更后的计划必须重新
+  生成、审核，不能继续使用旧批准。State schema v1 与旧 `<executor>:`
+  登记兼容，不把旧计划兼容解释为允许绕过检查。
+- 全量内容、托管区块替换和新 State 在首次写入前准备。整批与每次写入前复查
+  文件快照；State 最后写入，返回逐文件的 `written`/`unchanged`/`removed`。
+  元数据 State 的写入是固定事务步骤，不是任意 plan destination。
+- 可捕获写入失败时回滚本次已完成操作；无法安全恢复或外部修改发生时明确报告
+  不完整回滚，不覆盖他人改动。这不是跨文件崩溃原子事务，也不是 OS 文件锁；
+  断电/进程强杀和检查与文件操作之间的竞态仍需独占写入、备份和重新诊断。
+- 目标根目录以下的 symlink/junction 组件被拒绝，选定 Git/jj Profile 与 Core
+  依赖不能被目标包悄悄移除。诊断遇到非法 State 结构返回 `BROKEN` JSON。
+- 更新检测完整遍历有界 Release 分页（最多 100 页、3000 条、累计 2 MiB），
+  分页异常、越界或不完整返回 `UNAVAILABLE`，不声称全局最新；缺少完整检索
+  标记的旧检测缓存会失效后重新查询。
+
+这轮逐文件更新保护针对 `plan-update`/`apply-update`；首次 adoption 仍是独立
+接口，不应拿 `apply-adopt` 作为绕过本地执行器修改保护的更新恢复命令。
+
 ## Actions 手动同步
 
 升级执行器不会修改业务仓库的 GitHub Actions。采用者或获明确批准的 Agent
@@ -182,3 +210,27 @@ TheMasterplan 不会把检查或准备当成应用授权：
 - 未获相应授权不创建升级 PR、merge、release 或 deploy。
 
 准备可以连续执行；真正应用、范围扩大与外部交付仍有明确授权门。
+
+## 未发布的边界加固（PR #98 后续）
+
+- 普通更新先检查当前 State 的 Core 和选定 Profile 登记、managed-replace
+  所有权及磁盘内容 Hash。缺记录、缺文件或 Hash 不符时停止，不把损坏安装
+  隐式归为 ADD。恢复前备份项目并审查可信历史版本的文件及 State；明确恢复
+  授权后再恢复一致快照，重新 inspect/verify 并生成计划。没有自动恢复命令，
+  不用 apply-adopt 绕过冲突。
+- State、Manifest、Plan 的相对路径语法校验不读取 CWD；真正读取或写入时，
+  使用实际 project_root/package_root 检查后代 symlink/junction/reparse。
+- 各平台统一拒绝 Windows 保留设备名、组件末尾点/空格、非法字符，及目标集合
+  中的大小写别名（包括目录组件）和文件/父目录冲突。即使 POSIX 支持某些名称，
+  也不允许它们进入可移植的计划/State。这不是所有 Unicode、8.3 别名或文件系统
+  身份别名的完整检测保证。
+- POSIX 原子替换保留既有文件权限位；捕获失败时恢复删除/替换文件的原权限位。
+  写入前比较快照权限，回滚不覆盖外部 chmod。新增文件继续使用 0600，不继承
+  上游可执行权限；新增需执行的文件仍须由项目显式授权 chmod。
+- 权限位保护不承诺保留 owner、ACL、xattrs 或 Windows ACL，也不提供 OS 锁或
+  跨文件崩溃事务。准备计划到事务快照之间的 chmod 不作为内容漂移判定。
+- 仓库 CI 增加 Windows 回归任务；Linux 权威测试执行 POSIX 权限用例。
+  这些改动尚未发布，不移动任何既有 Tag，也不会自动更新已安装消费者。
+
+Windows 名称策略依据：[Microsoft Learn：Naming Files, Paths, and Namespaces](https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file)。
+补充设备名称参考：[Python os.path.isreserved](https://docs.python.org/3/library/os.path.html#os.path.isreserved)。

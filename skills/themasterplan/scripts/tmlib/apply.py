@@ -13,6 +13,8 @@ from .util import (
     sha256_of_file,
     write_bytes_atomic,
     write_json_atomic,
+    validate_relative_path,
+    validate_target_paths,
 )
 
 BLOCK_BEGIN = "<!-- THEMASTERPLAN:BEGIN MANAGED -->"
@@ -52,6 +54,8 @@ def _validate_plan(plan: dict) -> None:
         raise ApplyError("plan must be an object")
     if plan.get("schema_version") != 1 or plan.get("plan_type") != "adopt":
         raise ApplyError("unsupported plan: schema_version/plan_type mismatch")
+    if not isinstance(plan.get("selection"), dict) or plan["selection"].get("profile") not in ("git", "jj"):
+        raise ApplyError("plan selection requires git or jj profile")
     for key in ("source", "selection", "files"):
         if key not in plan:
             raise ApplyError(f"plan missing key: {key}")
@@ -74,8 +78,8 @@ def _validate_plan(plan: dict) -> None:
         destination = operation["destination"]
         if not isinstance(destination, str) or not destination:
             raise ApplyError("plan destination must be a non-empty string")
-        safe_join(Path("."), source)
-        safe_join(Path("."), destination)
+        validate_relative_path(source)
+        validate_relative_path(destination)
         if destination in seen:
             raise ApplyError(f"plan has duplicate destination: {destination}")
         seen.add(destination)
@@ -100,6 +104,7 @@ def _validate_plan(plan: dict) -> None:
             raise ApplyError(
                 f"unknown classification: {operation['classification']}"
             )
+    validate_target_paths([op["destination"] for op in files] + [".themasterplan/state.json"])
 
 
 def _read_self(relative: str) -> bytes:
@@ -274,6 +279,16 @@ def prepare_executor_bundle(source: Source | None) -> dict[str, bytes]:
     return prepared
 
 
+def executor_entries(source: Source) -> list[dict]:
+    """Expand the exact target bundle into auditable package-source operations."""
+    root = _executor_root(source)
+    prefix = root.relative_to(source.package_root.resolve()).as_posix()
+    return [{"source": f"{prefix}/{relative}",
+             "destination": f".themasterplan/bin/{relative}",
+             "ownership": "managed-replace", "required": True}
+            for relative in EXECUTOR_FILES]
+
+
 def install_executor(
     project_root: Path,
     written: list[str],
@@ -439,6 +454,21 @@ def apply_adopt(
         raise ApplyError("apply-adopt requires --source")
     if source.as_dict() != plan.get("source"):
         raise ApplyError("resolver source does not match plan source")
+
+    from .manifest import required_paths, select_files
+    from .source import package_manifest
+    selected = select_files(package_manifest(source.package_root), plan["selection"]["profile"],
+                            source.package_root)
+    validate_target_paths({op["destination"] for op in plan["files"]} |
+                          {entry["destination"] for entry in executor_entries(source)} |
+                          {".themasterplan/state.json"})
+    planned = {op["destination"]: op for op in plan["files"]}
+    mapped = {op["destination"]: op for op in selected}
+    for relative in required_paths(plan["selection"]["profile"]):
+        op = planned.get(relative)
+        if op is None or any(op.get(key) != mapped[relative][key]
+                             for key in ("source", "ownership")):
+            raise ApplyError(f"plan missing required profile mapping: {relative}")
 
     prepared_sources = _prepare_sources(plan, source.package_root)
     prepared_executor = prepare_executor_bundle(source)

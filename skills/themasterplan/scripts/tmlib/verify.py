@@ -5,10 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from .apply import EXECUTOR_FILES
+from .manifest import required_paths
 from .util import (
     TheMasterplanError,
     is_volatile_executor_artifact,
-    read_json,
+    load_state,
     safe_join,
     sha256_of_block,
     sha256_of_file,
@@ -35,9 +36,9 @@ def _check_hash(project_root: Path, relative: str, recorded: dict) -> list[str]:
     return []
 
 
-def verify(project_root: Path) -> dict:
+def _verify(project_root: Path) -> dict:
     issues: list[str] = []
-    state_path = project_root / ".themasterplan/state.json"
+    state_path = safe_join(project_root, ".themasterplan/state.json")
     if not state_path.is_file():
         return {
             "ok": False,
@@ -45,7 +46,7 @@ def verify(project_root: Path) -> dict:
             "issues": ["missing .themasterplan/state.json"],
         }
     try:
-        state = read_json(state_path)
+        state = load_state(state_path)
     except TheMasterplanError as exc:
         return {
             "ok": False,
@@ -53,7 +54,7 @@ def verify(project_root: Path) -> dict:
             "issues": [str(exc)],
         }
 
-    for relative in CORE_PATHS:
+    for relative in required_paths(state["selection"]["profile"]):
         if not safe_join(project_root, relative).is_file():
             issues.append(f"missing required: {relative}")
 
@@ -69,6 +70,9 @@ def verify(project_root: Path) -> dict:
                 issues.append(f"malformed state entry: {relative}")
                 continue
             issues.extend(_check_hash(project_root, relative, recorded))
+    for relative in required_paths(state["selection"]["profile"]):
+        if relative not in managed:
+            issues.append(f"required file not tracked: {relative}")
 
     agents = project_root / "AGENTS.md"
     if agents.is_file():
@@ -116,3 +120,10 @@ def verify(project_root: Path) -> dict:
         "status": "OK" if ok else "BROKEN",
         "issues": issues,
     }
+
+
+def verify(project_root: Path) -> dict:
+    try:
+        return _verify(project_root)
+    except (TheMasterplanError, OSError) as exc:
+        return {"ok": False, "status": "BROKEN", "issues": [str(exc)]}

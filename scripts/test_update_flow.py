@@ -64,7 +64,7 @@ def make_tar_gz(package_root: Path) -> bytes:
             for path in sorted((package_root / sub).rglob("*")):
                 if path.is_file():
                     rel = base / sub / path.relative_to(package_root / sub)
-                    info = tarfile.TarInfo(str(rel))
+                    info = tarfile.TarInfo(rel.as_posix())
                     data = path.read_bytes()
                     info.size = len(data)
                     tf.addfile(info, io.BytesIO(data))
@@ -215,9 +215,20 @@ class UpdateFlowTest(unittest.TestCase):
         )
 
     def test_plan_update_add_and_removed(self) -> None:
-        state = self._adopt(PACKAGE_ROOT)
+        pkg1 = make_package_copy()
+        self.addCleanup(shutil.rmtree, pkg1, True)
+        old_manifest_path = pkg1 / "distribution/manifest.json"
+        old_manifest = load_manifest(old_manifest_path)
+        old_manifest["files"].append({
+            "source": "core/retired.md", "destination": "core/retired.md",
+            "ownership": "managed-replace", "required": False,
+        })
+        (pkg1 / "core/retired.md").write_bytes(b"optional retired content\n")
+        write_json_atomic(old_manifest_path, old_manifest)
+        state = self._adopt(pkg1)
         pkg2 = make_package_copy()
-        # Add a new file to the manifest and drop the selected Git profile.
+        self.addCleanup(shutil.rmtree, pkg2, True)
+        # Add a file and retire an optional file, not the selected profile.
         manifest_path = pkg2 / "distribution" / "manifest.json"
         manifest = load_manifest(manifest_path)
         manifest["files"].append(
@@ -228,9 +239,6 @@ class UpdateFlowTest(unittest.TestCase):
                 "required": False,
             }
         )
-        manifest["files"] = [
-            e for e in manifest["files"] if e["destination"] != "profiles/git.md"
-        ]
         write_json_atomic(manifest_path, manifest)
         (pkg2 / "core" / "extra.md").write_bytes(b"extra\n")
         plan = plan_update(self.root, resolve_local(pkg2, commit="d" * 40), state)
@@ -238,13 +246,14 @@ class UpdateFlowTest(unittest.TestCase):
         self.assertIn("ADD", classes)
         self.assertIn("REMOVED_UPSTREAM", classes)
         self.assertFalse(plan["stop_conditions"], plan["stop_conditions"])
-        # Apply: extra added, profiles/git.md removed (hash unchanged).
+        # Apply: extra added, optional retired file removed (hash unchanged).
         plan_path = self.root / ".themasterplan-plan.json"
         write_json_atomic(plan_path, plan)
         result = apply_update(self.root, plan_path, resolve_local(pkg2, commit="d" * 40))
         self.assertIn("core/extra.md", result["written"])
-        self.assertIn("profiles/git.md", result["removed"])
-        self.assertFalse((self.root / "profiles/git.md").exists())
+        self.assertIn("core/retired.md", result["removed"])
+        self.assertFalse((self.root / "core/retired.md").exists())
+        self.assertTrue((self.root / "profiles/git.md").is_file())
 
     def test_plan_update_selection_changed(self) -> None:
         state = self._adopt(PACKAGE_ROOT)

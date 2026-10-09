@@ -9,11 +9,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .manifest import load_manifest
+from .manifest import required_paths
 from .util import (
     TheMasterplanError,
     is_volatile_executor_artifact,
-    read_json,
+    load_state,
     safe_join,
     sha256_of_block,
     sha256_of_file,
@@ -46,7 +46,7 @@ def _installed_hash_matches(project_root: Path, relative: str, recorded: dict) -
 def _has_core_files(project_root: Path) -> bool:
     for p in CORE_PATHS:
         try:
-            target = safe_join(project_root, str(p))
+            target = safe_join(project_root, p.as_posix())
         except TheMasterplanError:
             return False
         if not target.is_file():
@@ -60,7 +60,7 @@ def _missing_required(project_root: Path, state: dict | None) -> list[str]:
         if not _has_core_files(project_root):
             for p in CORE_PATHS:
                 try:
-                    target = safe_join(project_root, str(p))
+                    target = safe_join(project_root, p.as_posix())
                 except TheMasterplanError:
                     missing.append(str(p))
                     continue
@@ -77,17 +77,21 @@ def _missing_required(project_root: Path, state: dict | None) -> list[str]:
             continue
         if not target.is_file():
             missing.append(relative)
+    for relative in required_paths(state["selection"]["profile"]):
+        if (not safe_join(project_root, relative).is_file()
+                or relative not in _managed_entries(state)) and relative not in missing:
+            missing.append(relative)
     return missing
 
 
-def detect_status(project_root: Path, target_version: str | None = None) -> tuple[str, list[str]]:
+def _detect_status(project_root: Path, target_version: str | None = None) -> tuple[str, list[str]]:
     """Return (status, issues). `target_version` enables OUTDATED detection."""
     issues: list[str] = []
-    state_path = project_root / STATE_PATH
+    state_path = safe_join(project_root, STATE_PATH.as_posix())
     state: dict | None = None
     if state_path.is_file():
         try:
-            state = read_json(state_path)
+            state = load_state(state_path)
         except TheMasterplanError as exc:
             return "BROKEN", [f"state.json unreadable: {exc}"]
 
@@ -126,6 +130,13 @@ def detect_status(project_root: Path, target_version: str | None = None) -> tupl
     if target_version is not None and version != target_version:
         return "OUTDATED", [f"installed {version}, target {target_version}"]
     return "CURRENT", []
+
+
+def detect_status(project_root: Path, target_version: str | None = None) -> tuple[str, list[str]]:
+    try:
+        return _detect_status(project_root, target_version)
+    except (TheMasterplanError, OSError) as exc:
+        return "BROKEN", [str(exc)]
 
 
 def detect_profile(project_root: Path) -> str:

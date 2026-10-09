@@ -152,10 +152,18 @@ class UpdateSafetyTest(unittest.TestCase):
         self.temporary.cleanup()
 
     def _state_with_policy(self) -> dict:
-        source_policy = self.package / "core" / "policy.md"
-        target_policy = self.project / "core" / "policy.md"
-        target_policy.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source_policy, target_policy)
+        managed = {}
+        for relative in ("core/policy.md", "core/workflow.md", "profiles/git.md"):
+            source_file = self.package / relative
+            target = self.project / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source_file, target)
+            managed[relative] = {
+                "source": relative,
+                "source_sha256": sha256_of_file(source_file),
+                "installed_sha256": sha256_of_file(target),
+                "ownership": "managed-replace",
+            }
         return {
             "schema_version": 1,
             "source": self.source.as_dict(),
@@ -164,18 +172,12 @@ class UpdateSafetyTest(unittest.TestCase):
                 "validation_path": "scripts/check.sh",
                 "default_branch": "main",
             },
-            "managed_files": {
-                "core/policy.md": {
-                    "source": "core/policy.md",
-                    "source_sha256": sha256_of_file(source_policy),
-                    "installed_sha256": sha256_of_file(target_policy),
-                    "ownership": "managed-replace",
-                }
-            },
+            "managed_files": managed,
         }
 
     def test_unchanged_target_changed_after_plan_is_rejected(self) -> None:
         state = self._state_with_policy()
+        write_json_atomic(self.project / ".themasterplan/state.json", state)
         plan = plan_update(self.project, self.source, state)
         policy = next(
             operation
@@ -194,7 +196,7 @@ class UpdateSafetyTest(unittest.TestCase):
         with self.assertRaises(UpdateError):
             apply_update(self.project, plan_path, self.source)
         self.assertFalse(
-            (self.project / "profiles" / "git.md").exists(),
+            (self.project / ".themasterplan/bin/tmlib/source.py").exists(),
             "precondition failure must occur before ADD writes",
         )
 
@@ -216,7 +218,7 @@ class UpdateSafetyTest(unittest.TestCase):
         old_exec.parent.mkdir(parents=True, exist_ok=True)
         old_exec.write_text("# old-executor\n", encoding="utf-8")
 
-        for relative in ("core/policy.md", "core/workflow.md"):
+        for relative in ("core/policy.md", "core/workflow.md", "profiles/git.md"):
             target = self.project / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text("present\n", encoding="utf-8")
@@ -225,7 +227,7 @@ class UpdateSafetyTest(unittest.TestCase):
         validation.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
 
         managed_files = {}
-        for relative in ("core/policy.md", "core/workflow.md"):
+        for relative in ("core/policy.md", "core/workflow.md", "profiles/git.md"):
             source_file = self.package / relative
             target_file = self.project / relative
             digest = sha256_of_file(target_file)
@@ -249,6 +251,13 @@ class UpdateSafetyTest(unittest.TestCase):
             },
             "managed_files": managed_files,
         }
+        managed_files[".themasterplan/bin/themasterplan.py"] = {
+            "source": "<executor>:themasterplan.py",
+            "source_sha256": sha256_of_file(old_exec),
+            "installed_sha256": sha256_of_file(old_exec),
+            "ownership": "managed-replace",
+        }
+        write_json_atomic(self.project / ".themasterplan/state.json", old_state)
         plan = plan_update(self.project, self.source, old_state)
         plan_path = self.project / "executor-plan.json"
         write_json_atomic(plan_path, plan)
