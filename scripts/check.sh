@@ -89,6 +89,20 @@ else
 fi
 echo ""
 
+echo "--- Check 4: Repository collaboration record ---"
+if [ "${GITHUB_EVENT_NAME:-}" != "pull_request" ]; then
+    echo "  Not a PR event; local structure/compatibility tests cover this gate."
+elif [ -z "$PYTHON" ] || [ -z "${GITHUB_EVENT_PATH:-}" ]; then
+    echo "  UNAVAILABLE: Python and PR event metadata are required."
+    FAILED=$((FAILED + 1))
+elif "$PYTHON" scripts/validate_pr_body.py --require-collaboration --event-file "$GITHUB_EVENT_PATH"; then
+    echo "  Collaboration record structure passed (not identity or native review approval)."
+else
+    echo "  Collaboration record validation failed."
+    FAILED=$((FAILED + 1))
+fi
+echo ""
+
 echo "=== Repository check results ==="
 if [ "$FAILED" -eq 0 ]; then
     echo "All repository checks passed."

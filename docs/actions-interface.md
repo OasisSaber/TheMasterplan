@@ -100,6 +100,32 @@ TheMasterplan 决定如何触发、如何验证采用契约、如何检查 PR �
 
 如需改变契约，先增加兼容验证、提供迁移文档，并在下一主版本执行破坏性调整。
 
+### 未发布的协作记录扩展
+
+工作树新增 `Collaboration` 记录节；出现时由正文 validator 校验模式、角色、
+候选 SHA、审阅状态/证据及依赖/交接。旧格式 PR 无此节继续通过，原必填标题与
+自审项不变；中央 Actions 输入、权限和 required check 名称不变。
+
+正文只验证**声明结构**，不验证成员身份、权限、证据 URL 的真实性，或声明 SHA
+是否等于实际 head。它不是 GitHub approving review，也不是 merge/release 授权。
+独立审阅与实时门禁按 [仓库设置](repository-settings.md) 和 Core 执行。
+`Mode` 与任务 Issue/授权的一致性、Contributors 是否涵盖全部实际实现者，也须
+人工或平台证据核实；结构门不读取 Issue 权限或证明这些声明真实。填 solo 不是
+团队义务的豁免，模式冲突时不能因为 CI 绿色而交付。
+
+新采用项目可以显式要求协作记录，使用
+`python scripts/validate_pr_body.py --require-collaboration <pr-body-file>`；此可选
+CLI 严格入口不是新增中央 Actions 输入。脚本不在受管文件清单内，项目须显式
+维护可达副本与调用，不能假定已安装。维护者在项目自己的验证中启用前，应先
+迁移模板和既有开放 PR，不无迁移期地收紧历史消费者。
+
+已发布 `v5.0.0` 不会获得工作树扩展，也不移动 tag。采用扩展须选择含改动的完整
+commit SHA 或后续不可变 Release，并审阅更新计划；此兼容扩展不声称已发布。
+
+TheMasterplan 仓库自身在项目拥有的 `scripts/check.sh` 中，对 PR 事件读取
+`GITHUB_EVENT_PATH` 并启用严格入口。删除整节也会失败；非 PR 本地检查通过测试
+覆盖此结构门，但不声称已核验真实审阅。该要求不改变中央工作流的历史消费者默认。
+
 ## 消费者契约
 
 调用方仓库必须满足最小采用契约（由 `scripts/validate_consumer.py` 机械验证）：

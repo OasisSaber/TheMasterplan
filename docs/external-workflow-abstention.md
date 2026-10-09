@@ -27,9 +27,13 @@ schema。
 - Git / Jujutsu；
 - 直接使用的 LLM Harness，例如 OpenCode、Codex、ChatGPT；
 - 测试、lint、构建工具。
+- 多位人类/各自的 Agent 按 TheMasterplan 分工、独立审阅或明确交接。
 
 这些工具只执行当前任务，不自行拥有 worker/session/worktree/PR 生命周期时，
 TheMasterplan 可以保持 `ACTIVE`。
+
+成员协作不等于另一个治理系统接管。多个任务各有协调人，或不同成员分别负责
+实现、review 和批准，也不因角色分散而自动 `ABSTAINED`；责任交接按 Core Workflow。
 
 ## 什么构成外部治理所有权
 

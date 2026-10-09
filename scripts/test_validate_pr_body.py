@@ -1,4 +1,10 @@
 import unittest
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
 from validate_pr_body import REQUIRED_REVIEW_ITEMS, validate
 
 
@@ -22,6 +28,112 @@ Tests passed.
 ## Agent self-review
 {REVIEW}
 """
+
+COLLABORATION = """\n## Collaboration
+- Mode: team
+- Coordinator: @alice
+- Contributors: @alice, @bob
+- Reviewer: @carol
+- Candidate: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+- Review: complete
+- Evidence: https://github.com/example/project/pull/1#pullrequestreview-1
+- Dependencies: none
+- Handoff: none
+"""
+
+
+class CollaborationRecordTests(unittest.TestCase):
+    def test_team_record_and_legacy_compatibility(self):
+        self.assertEqual(validate(BASE), [])
+        self.assertEqual(validate(BASE + COLLABORATION), [])
+        self.assertEqual(validate(BASE + COLLABORATION, require_collaboration=True), [])
+        self.assertTrue(validate(BASE, require_collaboration=True))
+
+    def test_draft_is_pending_not_a_claim_of_completed_review(self):
+        body = COLLABORATION.replace("Reviewer: @carol", "Reviewer: unassigned")
+        body = body.replace("Review: complete", "Review: pending")
+        body = body.replace("Candidate: " + "a" * 40, "Candidate: pending")
+        body = body.replace("Evidence: https://github.com/example/project/pull/1#pullrequestreview-1", "Evidence: pending")
+        self.assertEqual(validate(BASE + body), [])
+
+    def test_solo_record_cannot_override_native_required_reviews(self):
+        body = COLLABORATION.replace("Mode: team", "Mode: solo")
+        body = body.replace("Reviewer: @carol", "Reviewer: not-required")
+        body = body.replace("Review: complete", "Review: not-required")
+        self.assertEqual(validate(BASE + body), [])
+
+    def test_independence_case_and_handle_alias(self):
+        for reviewer in ("@alice", "@Alice", "alice", "@bob"):
+            with self.subTest(reviewer=reviewer):
+                self.assertTrue(validate(BASE + COLLABORATION.replace("Reviewer: @carol", "Reviewer: " + reviewer)))
+
+    def test_non_implementing_coordinator_can_review(self):
+        # Independence is from implementation, not a mandatory third person.
+        body = COLLABORATION.replace("Contributors: @alice, @bob", "Contributors: @bob")
+        body = body.replace("Reviewer: @carol", "Reviewer: @alice")
+        self.assertEqual(validate(BASE + body), [])
+
+    def test_unassigned_coordinator_and_contributors(self):
+        for field in ("Coordinator: @alice", "Contributors: @alice, @bob"):
+            for value in ("pending", "none", "<identity>"):
+                with self.subTest(field=field, value=value):
+                    self.assertTrue(validate(BASE + COLLABORATION.replace(field, field.split(":")[0] + ": " + value)))
+
+    def test_duplicate_roles_fields_and_sections(self):
+        for extra in ("- Mode: team\n", "- Coordinator: @bob\n", COLLABORATION):
+            self.assertTrue(validate(BASE + COLLABORATION + extra))
+        self.assertTrue(validate(BASE + COLLABORATION.replace("@alice, @bob", "@alice, Alice")))
+
+    def test_missing_or_hidden_fields(self):
+        for field in ("Mode", "Coordinator", "Contributors", "Reviewer", "Candidate", "Review", "Evidence", "Dependencies", "Handoff"):
+            lines = COLLABORATION.splitlines()
+            selected = next(line for line in lines if line.startswith("- " + field + ":"))
+            for replacement in ("", "<!-- " + selected + " -->", "- " + field + ": <!-- hidden -->"):
+                with self.subTest(field=field, replacement=replacement):
+                    self.assertTrue(validate(BASE + COLLABORATION.replace(selected, replacement)))
+
+    def test_complete_review_requires_candidate_identity_and_evidence(self):
+        for before, after in (("Reviewer: @carol", "Reviewer: unassigned"),
+                              ("Candidate: " + "a" * 40, "Candidate: pending"),
+                              ("Candidate: " + "a" * 40, "Candidate: aaaaaaa"),
+                              ("Evidence: https://github.com/example/project/pull/1#pullrequestreview-1", "Evidence: pending"),
+                              ("Review: complete", "Review: approved")):
+            with self.subTest(after=after):
+                self.assertTrue(validate(BASE + COLLABORATION.replace(before, after)))
+
+    def test_team_cannot_waive_review_or_hide_record_in_fence(self):
+        self.assertTrue(validate(BASE + COLLABORATION.replace("Review: complete", "Review: not-required")))
+        hidden = COLLABORATION.replace("## Collaboration", "## Collaboration\n```text") + "\n```\n"
+        self.assertTrue(validate(BASE + hidden))
+
+    def test_cli_strict_env_stdin_file_and_event(self):
+        command = [sys.executable, str(Path(__file__).with_name("validate_pr_body.py"))]
+        env = dict(os.environ, PYTHONIOENCODING="utf-8")
+        env.pop("PR_BODY", None)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            body_file = root / "body.md"
+            event_file = root / "event.json"
+            body_file.write_text(BASE + COLLABORATION, encoding="utf-8")
+            event_file.write_text(json.dumps({"pull_request": {"body": BASE + COLLABORATION}}), encoding="utf-8")
+            cases = [
+                ([], BASE, env, 0),
+                (["--require-collaboration"], BASE, env, 1),
+                (["--require-collaboration"], "", dict(env, PR_BODY=BASE + COLLABORATION), 0),
+                ([str(body_file), "--require-collaboration"], "", dict(env, PR_BODY=BASE), 0),
+                (["--event-file", str(event_file), "--require-collaboration"], "", env, 0),
+                ([str(body_file), "--event-file", str(event_file)], "", env, 2),
+            ]
+            for args, stdin, case_env, expected in cases:
+                with self.subTest(args=args, expected=expected):
+                    result = subprocess.run(command + args, input=stdin, env=case_env,
+                                            capture_output=True, text=True, encoding="utf-8")
+                    self.assertEqual(result.returncode, expected, result.stderr)
+            for event in ({}, {"pull_request": {"body": None}}, {"pull_request": []}):
+                event_file.write_text(json.dumps(event), encoding="utf-8")
+                result = subprocess.run(command + ["--event-file", str(event_file)],
+                                        input="", env=env, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 2, result.stderr)
 
 
 class ValidatePrBodyTests(unittest.TestCase):
