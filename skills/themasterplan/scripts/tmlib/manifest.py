@@ -5,7 +5,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from .util import TheMasterplanError, SCHEMA_VERSION, read_json, safe_join
+from .util import (TheMasterplanError, SCHEMA_VERSION, read_json, safe_join,
+                   validate_relative_path, validate_target_paths)
 
 ALLOWED_OWNERSHIPS = (
     "managed-replace",
@@ -98,7 +99,7 @@ def validate_files(files: list) -> None:
             ("destination", destination),
         ):
             try:
-                safe_join(Path("."), relative)
+                validate_relative_path(relative)
             except TheMasterplanError as exc:
                 raise ManifestError(
                     f"manifest {label} {relative!r}: {exc}"
@@ -112,6 +113,7 @@ def validate_files(files: list) -> None:
             raise ManifestError(
                 "manifest file entry 'required' must be a boolean"
             )
+    validate_target_paths(seen_destinations)
 
 
 def select_files(manifest: dict, profile: str, package_root: Path | None = None) -> list[dict]:

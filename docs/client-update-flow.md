@@ -210,3 +210,27 @@ TheMasterplan 不会把检查或准备当成应用授权：
 - 未获相应授权不创建升级 PR、merge、release 或 deploy。
 
 准备可以连续执行；真正应用、范围扩大与外部交付仍有明确授权门。
+
+## 未发布的边界加固（PR #98 后续）
+
+- 普通更新先检查当前 State 的 Core 和选定 Profile 登记、managed-replace
+  所有权及磁盘内容 Hash。缺记录、缺文件或 Hash 不符时停止，不把损坏安装
+  隐式归为 ADD。恢复前备份项目并审查可信历史版本的文件及 State；明确恢复
+  授权后再恢复一致快照，重新 inspect/verify 并生成计划。没有自动恢复命令，
+  不用 apply-adopt 绕过冲突。
+- State、Manifest、Plan 的相对路径语法校验不读取 CWD；真正读取或写入时，
+  使用实际 project_root/package_root 检查后代 symlink/junction/reparse。
+- 各平台统一拒绝 Windows 保留设备名、组件末尾点/空格、非法字符，及目标集合
+  中的大小写别名（包括目录组件）和文件/父目录冲突。即使 POSIX 支持某些名称，
+  也不允许它们进入可移植的计划/State。这不是所有 Unicode、8.3 别名或文件系统
+  身份别名的完整检测保证。
+- POSIX 原子替换保留既有文件权限位；捕获失败时恢复删除/替换文件的原权限位。
+  写入前比较快照权限，回滚不覆盖外部 chmod。新增文件继续使用 0600，不继承
+  上游可执行权限；新增需执行的文件仍须由项目显式授权 chmod。
+- 权限位保护不承诺保留 owner、ACL、xattrs 或 Windows ACL，也不提供 OS 锁或
+  跨文件崩溃事务。准备计划到事务快照之间的 chmod 不作为内容漂移判定。
+- 仓库 CI 增加 Windows 回归任务；Linux 权威测试执行 POSIX 权限用例。
+  这些改动尚未发布，不移动任何既有 Tag，也不会自动更新已安装消费者。
+
+Windows 名称策略依据：[Microsoft Learn：Naming Files, Paths, and Namespaces](https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file)。
+补充设备名称参考：[Python os.path.isreserved](https://docs.python.org/3/library/os.path.html#os.path.isreserved)。

@@ -12,7 +12,8 @@ from pathlib import Path
 
 from .manifest import ManifestError, select_files
 from .source import DEFAULT_REPOSITORY, Source, package_manifest
-from .util import TheMasterplanError, safe_join, sha256_of_block, sha256_of_file
+from .util import (TheMasterplanError, safe_join, sha256_of_block, sha256_of_file,
+                   validate_target_paths)
 
 MANAGED_BLOCK_TEMPLATE = "distribution/templates/agents-managed-block.md"
 CONSUMER_WORKFLOW_TEMPLATE = "distribution/templates/consumer-workflow.yml"
@@ -202,4 +203,6 @@ def plan_adopt(
         ],
         "stop_conditions": stop_conditions,
     }
+    validate_target_paths([op["destination"] for op in plan["files"]] +
+                          [".themasterplan/state.json"])
     return plan

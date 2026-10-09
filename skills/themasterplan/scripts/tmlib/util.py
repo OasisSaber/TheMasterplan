@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import re
+import stat
 import tempfile
 from pathlib import Path, PurePosixPath
 
@@ -44,23 +45,57 @@ def is_volatile_executor_artifact(relative: str) -> bool:
     )
 
 
-def safe_join(root: Path, relative: str) -> Path:
-    """Resolve root/relative and reject escapes, absolute paths and symlinks.
-
-    `relative` must use forward slashes and must not contain ``..`` segments
-    or be absolute. The resolved path must stay inside `root`.
-    """
+def validate_relative_path(relative: str) -> PurePosixPath:
+    """Validate portable path syntax without consulting CWD or the filesystem."""
     if (not isinstance(relative, str) or not relative or relative == "."
             or "\\" in relative or ":" in relative or "\x00" in relative):
         raise PathSafetyError(f"invalid relative path: {relative!r}")
-    rel = Path(relative)
-    if PurePosixPath(relative).as_posix() != relative:
+    rel = PurePosixPath(relative)
+    if rel.as_posix() != relative:
         raise PathSafetyError(f"noncanonical relative path: {relative}")
     if rel.is_absolute():
         raise PathSafetyError(f"absolute path not allowed: {relative}")
     parts = rel.parts
     if any(part == ".." for part in parts):
         raise PathSafetyError(f"path traversal not allowed: {relative}")
+    for part in parts:
+        stem = part.split(".", 1)[0].rstrip(" ").upper()
+        if (part.endswith((".", " "))
+                or any(ord(char) < 32 or char in '<>"|?*' for char in part)
+                or stem in {"CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"}
+                or re.fullmatch(r"(?:COM|LPT)[1-9¹²³]", stem)):
+            raise PathSafetyError(f"nonportable filename component: {relative}")
+    return rel
+
+
+def validate_target_paths(paths) -> None:
+    """Reject case aliases (including directory aliases) and file/parent overlap.
+
+    Conservatively use case-folded names on every platform so a plan cannot
+    acquire different target identities when transferred to Windows.
+    """
+    prefixes = {}
+    terminals = set()
+    for relative in paths:
+        parts = validate_relative_path(relative).parts
+        for index in range(1, len(parts) + 1):
+            prefix = "/".join(parts[:index])
+            key = prefix.casefold()
+            previous = prefixes.get(key)
+            if previous is not None and previous != prefix:
+                raise PathSafetyError(f"case-alias target collision: {previous}, {prefix}")
+            if index < len(parts) and key in terminals:
+                raise PathSafetyError(f"file/parent target collision: {relative}")
+            prefixes[key] = prefix
+        key = relative.casefold()
+        if key in terminals or any(p.startswith(key + "/") for p in prefixes):
+            raise PathSafetyError(f"duplicate or file/parent target collision: {relative}")
+        terminals.add(key)
+
+
+def safe_join(root: Path, relative: str) -> Path:
+    """Validate syntax, then reject descendant links/escapes beneath the real root."""
+    parts = validate_relative_path(relative).parts
     root_resolved = root.resolve()
     target = root_resolved
     for index, part in enumerate(parts):
@@ -156,12 +191,12 @@ def validate_state(state: object) -> dict:
         value = selection.get(key)
         if not isinstance(value, str) or not value:
             raise TheMasterplanError(f"state.json selection.{key} missing or malformed")
-    safe_join(Path("."), selection["validation_path"])
+    validate_relative_path(selection["validation_path"])
     managed = state.get("managed_files")
     if not isinstance(managed, dict):
         raise TheMasterplanError("state.json managed_files must be an object")
+    validate_target_paths(managed)
     for relative, record in managed.items():
-        safe_join(Path("."), relative)
         if is_volatile_executor_artifact(relative):
             continue
         if not isinstance(record, dict):
@@ -185,34 +220,47 @@ def apply_file_changes(root: Path, changes: dict[str, bytes | None],
     Not a crash-safe multi-file transaction or a filesystem lock. Refuse to roll
     back over an intervening external edit; report any incomplete restoration.
     """
+    validate_target_paths(expected)
+    if not changes.keys() <= expected.keys():
+        raise TheMasterplanError("changed targets must have preflight snapshots")
+
     def current(relative):
         path = safe_join(root, relative)
         if path.exists() and not path.is_file():
             raise TheMasterplanError(f"target is not a regular file: {relative}")
-        return path.read_bytes() if path.is_file() else None
+        if not path.is_file():
+            return None, None
+        mode = stat.S_IMODE(path.stat().st_mode) if os.name != "nt" else None
+        return path.read_bytes(), mode
 
+    modes = {}
     for relative, before in expected.items():
-        if current(relative) != before:
+        content, mode = current(relative)
+        if content != before:
             raise TheMasterplanError(f"target changed before write: {relative}")
+        modes[relative] = mode
+    intended_modes = {relative: (None if content is None or os.name == "nt"
+                                 else modes[relative] if modes[relative] is not None else 0o600)
+                      for relative, content in changes.items()}
     completed = []
     try:
         for relative, content in changes.items():
-            if current(relative) != expected[relative]:
+            if current(relative) != (expected[relative], modes[relative]):
                 raise TheMasterplanError(f"target changed before write: {relative}")
             target = safe_join(root, relative)
             completed.append(relative)
             if content is None:
                 target.unlink()
             else:
-                write_bytes_atomic(target, content)
+                write_bytes_atomic(target, content, mode=intended_modes[relative])
     except BaseException as exc:
         failed = []
         for relative in reversed(completed):
             try:
                 actual = current(relative)
-                if actual == expected[relative]:
+                if actual == (expected[relative], modes[relative]):
                     continue
-                if actual != changes[relative]:
+                if actual != (changes[relative], intended_modes[relative]):
                     failed.append(relative)
                     continue
                 target = safe_join(root, relative)
@@ -220,7 +268,7 @@ def apply_file_changes(root: Path, changes: dict[str, bytes | None],
                 if before is None:
                     target.unlink()
                 else:
-                    write_bytes_atomic(target, before)
+                    write_bytes_atomic(target, before, mode=modes[relative])
             except (OSError, TheMasterplanError):
                 failed.append(relative)
         if failed:
@@ -233,28 +281,26 @@ def apply_file_changes(root: Path, changes: dict[str, bytes | None],
 
 def write_json_atomic(path: Path, data: dict) -> None:
     """Atomically write a JSON file via a temp file + rename."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            json.dump(data, fh, ensure_ascii=False, indent=2)
-            fh.write("\n")
-        os.replace(tmp, str(path))
-    except BaseException:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
+    write_bytes_atomic(path, (json.dumps(data, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
 
 
-def write_bytes_atomic(path: Path, content: bytes) -> None:
-    """Atomically write raw bytes via a temp file + rename."""
+def write_bytes_atomic(path: Path, content: bytes, *, mode: int | None = None) -> None:
+    """Atomic replacement preserving existing POSIX mode; new files remain 0600.
+
+    Explicit mode permits restoring a deleted file. Owner, ACL and extended
+    attributes are not preserved; this is permission-bit protection, not an
+    identity-preserving transaction.
+    """
+    if mode is None and os.name != "nt" and path.exists():
+        mode = stat.S_IMODE(path.stat().st_mode)
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
     try:
         with os.fdopen(fd, "wb") as fh:
             fh.write(content)
+            fh.flush()
+            if mode is not None and os.name != "nt":
+                os.fchmod(fh.fileno(), mode)
         os.replace(tmp, str(path))
     except BaseException:
         try:

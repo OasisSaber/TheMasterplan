@@ -181,12 +181,12 @@ class ReviewUpdateTests(unittest.TestCase):
         real_write = util.write_bytes_atomic
         count = 0
 
-        def fail_once(path, content):
+        def fail_once(path, content, **kwargs):
             nonlocal count
             count += 1
             if count == 2:
                 raise OSError("simulated write failure")
-            return real_write(path, content)
+            return real_write(path, content, **kwargs)
 
         with mock.patch("tmlib.util.write_bytes_atomic", side_effect=fail_once), \
              self.assertRaisesRegex(TheMasterplanError, "restored"):
@@ -237,7 +237,7 @@ class ReviewPathAndStateTests(unittest.TestCase):
             for relative in ("link", "linked-dir/file", "linked-dir/new"):
                 with self.subTest(relative=relative), self.assertRaises(TheMasterplanError):
                     safe_join(root, relative)
-            self.assertEqual(safe_join(root, "real/file"), root / "real/file")
+            self.assertEqual(safe_join(root, "real/file"), root.resolve() / "real/file")
 
     def test_cr03_windows_ambiguous_relative_paths_rejected(self):
         for relative in ("C:README.md", "file:stream", "core\\policy.md", "", "."):

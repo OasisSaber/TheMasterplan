@@ -70,6 +70,8 @@ Completion Contract 为完成定义。
 普通 PR 使用仓库 `.github/pull_request_template.md`，让模板与 CI validator
 作为机械契约的单一事实来源；不要在 Skill 或其他入口复制字段清单。
 
+PR 必须提供通俗易懂的中文修改简报；填写方式以 PR 模板为准。
+
 创建或更新 PR 后：
 
 - 等待关联 CI；
