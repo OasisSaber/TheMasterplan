@@ -1,5 +1,7 @@
 # GitHub Actions 中央接口
 
+本源码目标为 **v5.1.0**；发布状态以 [GitHub Releases](https://github.com/OasisSaber/TheMasterplan/releases) 与对应不可变 Tag 为准。以下 v5.1.0 调用须在 Tag 发布并验证后使用；发布前只固定经审核的完整 SHA，不假定版本已发布。
+
 TheMasterplan 提供集中维护、版本化发布的 GitHub Actions 可重用工作流。
 业务仓库通过 `uses` 调用，不再复制中央 CI 实现。
 
@@ -11,12 +13,12 @@ v1 兼容线（冻结，`policy-ref` 默认 `v1`）：
 uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1
 ```
 
-当前版（v5.0.0，tag-only 精确固定）：
+本源码目标版本（v5.1.0，tag-only 精确固定）：
 
 ```yaml
-uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v5.0.0
+uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v5.1.0
 with:
-  policy-ref: v5.0.0
+  policy-ref: v5.1.0
 ```
 
 `aw-check.yml` 在 v1 兼容线生命周期内不得移动或重命名。工作流路径移动属
@@ -35,8 +37,8 @@ with:
 不得加入任意 `setup-command`、`check-command`、Shell 表达式、Secret 输入、
 发布或部署参数、自动合并参数或写权限开关。
 
-固定版本调用时 `policy-ref` 必须等于 `uses` 引用版本（v5.0.0 通道必须
-显式指定 `policy-ref: v5.0.0`），见 [release-channels.md](release-channels.md)。
+固定版本调用时 `policy-ref` 必须等于 `uses` 引用版本（v5.1.0 通道必须
+显式指定 `policy-ref: v5.1.0`），见 [release-channels.md](release-channels.md)。
 
 ## 固定行为
 
@@ -56,7 +58,7 @@ with:
 
 ```text
 业务仓库 .github/workflows/check.yml
-        │ uses @v1（aw-check.yml）或 @v5.0.0（themasterplan-check.yml）
+        │ uses @v1（aw-check.yml）或 @v5.1.0（themasterplan-check.yml）
         ▼
 TheMasterplan reusable workflow
         │
@@ -100,7 +102,7 @@ TheMasterplan 决定如何触发、如何验证采用契约、如何检查 PR �
 
 如需改变契约，先增加兼容验证、提供迁移文档，并在下一主版本执行破坏性调整。
 
-### 未发布的协作记录扩展
+### v5.1.0 协作记录扩展
 
 工作树新增 `Collaboration` 记录节；出现时由正文 validator 校验模式、角色、
 候选 SHA、审阅状态/证据及依赖/交接。旧格式 PR 无此节继续通过，原必填标题与
@@ -120,7 +122,7 @@ CLI 严格入口不是新增中央 Actions 输入。脚本不在受管文件清�
 迁移模板和既有开放 PR，不无迁移期地收紧历史消费者。
 
 已发布 `v5.0.0` 不会获得工作树扩展，也不移动 tag。采用扩展须选择含改动的完整
-commit SHA 或后续不可变 Release，并审阅更新计划；此兼容扩展不声称已发布。
+commit SHA 或核验已发布的 v5.1.0，并审阅更新计划；此兼容扩展不声称仅靠版本标记就已发布。
 
 TheMasterplan 仓库自身在项目拥有的 `scripts/check.sh` 中，对 PR 事件读取
 `GITHUB_EVENT_PATH` 并启用严格入口。删除整节也会失败；非 PR 本地检查通过测试

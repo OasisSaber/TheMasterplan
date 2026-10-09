@@ -1,4 +1,4 @@
-# 客户项目更新检测与升级流程（v5.0.0）
+# 客户项目更新检测与升级流程（v5.1.0）
 
 > 面向采用项目说明 TheMasterplan 的更新检测行为与升级确认门。检测逻辑的
 > 权威实现是 `skills/themasterplan/scripts/tmlib/update_check.py` 与
@@ -114,10 +114,10 @@ python .themasterplan/bin/themasterplan.py apply-update \
 repository）。被本地修改的文件不会被覆盖（`LOCAL_MODIFIED` 停止）；上游
 删除的文件仅在本地与记录 hash 一致时删除。
 
-### 未发布源码中的更新安全修复
+### v5.1.0 更新安全修复
 
-以下行为属于未发布候选，不移动 `v5.0.0` 或 `v1` Tag，也不会自动更新已经
-安装的旧执行器。采用前先审核并取得精确候选源码，使用该候选中的执行器重新
+以下行为属于 v5.1.0 源码；发布状态以对应 Release 与不可变 Tag 实核。
+不移动 `v5.0.0` 或 `v1` Tag，也不会自动更新已经安装的旧执行器。采用前先审核并取得精确候选源码，使用该候选中的执行器重新
 生成计划并请求应用批准；仅把 `--source` 换成新包、仍运行旧执行器，不能获得
 新执行器的安全检查。不得未经授权覆盖本地修补的 `.themasterplan/bin/`。
 
@@ -211,7 +211,7 @@ TheMasterplan 不会把检查或准备当成应用授权：
 
 准备可以连续执行；真正应用、范围扩大与外部交付仍有明确授权门。
 
-## 未发布的边界加固（PR #98 后续）
+## v5.1.0 边界加固（PR #100）
 
 - 普通更新先检查当前 State 的 Core 和选定 Profile 登记、managed-replace
   所有权及磁盘内容 Hash。缺记录、缺文件或 Hash 不符时停止，不把损坏安装
@@ -230,7 +230,8 @@ TheMasterplan 不会把检查或准备当成应用授权：
 - 权限位保护不承诺保留 owner、ACL、xattrs 或 Windows ACL，也不提供 OS 锁或
   跨文件崩溃事务。准备计划到事务快照之间的 chmod 不作为内容漂移判定。
 - 仓库 CI 增加 Windows 回归任务；Linux 权威测试执行 POSIX 权限用例。
-  这些改动尚未发布，不移动任何既有 Tag，也不会自动更新已安装消费者。
+  发布状态以 v5.1.0 Release 与不可变 Tag 实核；这些改动不包含在 v5.0.0 中，
+  不移动任何既有 Tag，也不会自动更新已安装消费者。
 
 Windows 名称策略依据：[Microsoft Learn：Naming Files, Paths, and Namespaces](https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file)。
 补充设备名称参考：[Python os.path.isreserved](https://docs.python.org/3/library/os.path.html#os.path.isreserved)。
