@@ -1,5 +1,7 @@
 # TheMasterplan 采用指南
 
+本源码目标为 **v5.1.0**；发布状态以 [GitHub Releases](https://github.com/OasisSaber/TheMasterplan/releases) 与对应不可变 Tag 为准。以下 v5.1.0 调用须在 Tag 发布并验证后使用；发布前只固定经审核的完整 SHA，不假定版本已发布。
+
 ## 工具与平台基线
 
 - Jujutsu `0.43.0` 的本文档命令已验证；更高版本必须在采用时重新完成烟雾测试。
@@ -47,9 +49,9 @@ jobs:
     name: check
     permissions:
       contents: read
-    uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v5.0.0
+    uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v5.1.0
     with:
-      policy-ref: v5.0.0
+      policy-ref: v5.1.0
       project-check-path: scripts/check.sh
 ```
 
@@ -178,7 +180,8 @@ TheMasterplan 不提供外部 orchestrator 专用兼容层。
 新任务使用上游 PR 模板的 `Collaboration` 节；已有项目须明确同步项目拥有的
 Issue/PR 模板及可选正文脚本，不覆盖本地定制。历史无此节 PR 保持机械兼容；
 要强制记录时，按 [Actions 接口](actions-interface.md) 的严格 CLI 入口显式迁移。
-该扩展尚未发布到不可变 `v5.0.0`，须选择包含改动的完整 SHA 或后续 Release。
+协作扩展不包含在已发布的不可变 `v5.0.0` 中；须选择包含改动的完整 SHA，
+或核验已发布的 v5.1.0，不因源码标记就假定 Tag 可用。
 
 协议采用在 Git/jj 都适用；以下既有 jj smoke 不意味着团队必须转换 VCS。
 

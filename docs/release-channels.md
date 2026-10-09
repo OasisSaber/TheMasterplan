@@ -1,11 +1,14 @@
 # 版本通道
 
+本源码目标为 **v5.1.0**；发布状态以 [GitHub Releases](https://github.com/OasisSaber/TheMasterplan/releases) 与对应不可变 Tag 为准。以下 v5.1.0 调用须在 Tag 发布并验证后使用；发布前只固定经审核的完整 SHA，不假定版本已发布。
+
 TheMasterplan 中央 Actions 接口使用以下版本通道：
 
 ```text
 main        TheMasterplan 开发与自测
 v1          兼容线（已冻结，指向承载 v2.0.0 内容的提交，不再推进；工作流路径 aw-check.yml）
-v5.0.0      当前版不可变 Release tag（工作流路径 themasterplan-check.yml）
+v5.1.0      本源码目标不可变 Release tag（使用前核验发布状态）
+v5.0.0      历史不可变 Release tag（工作流路径 themasterplan-check.yml）
 v4.1.0      历史不可变 Release tag（工作流路径 themasterplan-check.yml）
 v4.0.0      历史不可变 Release tag（工作流路径 themasterplan-check.yml）
 v1.1.0      历史不可变 Release tag（工作流路径 aw-check.yml）
@@ -20,22 +23,22 @@ v1 兼容线（`policy-ref` 默认 `v1`）：
 uses: OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1
 ```
 
-当前版（推荐新采用，tag-only 精确固定）：
+本源码目标版（Tag 发布后新采用，tag-only 精确固定）：
 
 ```yaml
-uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v5.0.0
+uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v5.1.0
 with:
-  policy-ref: v5.0.0
+  policy-ref: v5.1.0
 ```
 
 ## 严格固定
 
-当前版：
+本源码目标版：
 
 ```yaml
-uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v5.0.0
+uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v5.1.0
 with:
-  policy-ref: v5.0.0
+  policy-ref: v5.1.0
   project-check-path: scripts/check.sh
 ```
 

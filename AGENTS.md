@@ -10,7 +10,7 @@
 - 默认分支：`main`
 - 权威验证入口：`bash scripts/check.sh`
 - 本仓库 PR 事件由该入口要求 `Collaboration` 记录；结构通过不是身份或真实 review 批准。
-- 当前稳定中央 Actions：`OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v5.0.0`
+- 本源码目标中央 Actions：`OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v5.1.0`；发布状态以 GitHub Release 与不可变 Tag 实核，发布前固定经审核的完整 SHA。
 - v1 冻结兼容线：`OasisSaber/TheMasterplan/.github/workflows/aw-check.yml@v1`
 - 合并策略：默认由人类决定 Squash Merge；微小修复快速通道仅按
   `core/workflow.md` 的明确条件使用。

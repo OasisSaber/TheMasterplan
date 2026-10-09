@@ -76,7 +76,7 @@ Agent Orchestrator、Trellis 或其他工具的版本/配置特征矩阵。
 - 若项目希望完全由另一个治理系统接管，应由人类在采用/迁移任务中明确选择
   唯一治理方案，而不是让 TheMasterplan 自动修改仓库设置。
 
-## v5.0.0 当前模型
+## v5 当前模型
 
 v5 不再把 Harness Adapter 作为当前 CLI/state/Context 抽象。直接使用
 OpenCode、Codex、ChatGPT、Shell、Git 或 jj 并不会自动产生治理冲突；判断仍只看

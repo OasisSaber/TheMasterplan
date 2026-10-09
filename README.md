@@ -61,6 +61,8 @@ release 生命周期，TheMasterplan 进入 `ABSTAINED`，不与外部工作流�
 
 ## 快速采用
 
+本源码目标为 **v5.1.0**；发布状态以 [GitHub Releases](https://github.com/OasisSaber/TheMasterplan/releases) 与对应不可变 Tag 为准。以下 v5.1.0 调用须在 Tag 发布并验证后使用；发布前只固定经审核的完整 SHA，不假定版本已发布。
+
 推荐两种方式：
 
 ### 1. GitHub Template Repository
@@ -82,9 +84,9 @@ jobs:
     name: check
     permissions:
       contents: read
-    uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v5.0.0
+    uses: OasisSaber/TheMasterplan/.github/workflows/themasterplan-check.yml@v5.1.0
     with:
-      policy-ref: v5.0.0
+      policy-ref: v5.1.0
       project-check-path: scripts/check.sh
 ```
 
@@ -156,14 +158,17 @@ pwsh -NoProfile -File scripts/check.ps1
 
 ## 更新与版本
 
-当前稳定 Release：**v5.0.0**。
+本源码分发版本：**v5.1.0**。发布状态见上面的 Releases 链接；本文件不会仅因源码版本已更新就宣称 Release 已发布。
+
+中文变更与升级限制见 [v5.1.0 发布说明](docs/releases/v5.1.0.md)。
 
 普通 `/TheMasterplan` 任务不会自动检查更新。只有明确的 update、adopt、
 maintenance 或版本检查意图才加载更新流程并执行只读检查。
 
 版本通道：
 
-- `v5.0.0`：当前稳定不可变 Release tag；
+- `v5.1.0`：本源码目标不可变 Release tag，使用前核验发布状态；
+- `v5.0.0`：历史已发布不可变 Release tag，不移动、不覆盖；
 - `v1`：冻结兼容线，不再推进；
 - 完整 commit SHA：最高可复现性。
 

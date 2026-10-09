@@ -48,7 +48,7 @@ DELETED = (
 class ContextMinimalContractTests(unittest.TestCase):
     def test_manifest_is_v5_without_adapter_files_or_runtime_surface(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-        self.assertEqual(manifest["distribution_version"], "v5.0.0")
+        self.assertEqual(manifest["distribution_version"], "v5.1.0")
         self.assertEqual(
             manifest.get("components", {}).get("adapters"),
             ["generic"],
@@ -301,14 +301,14 @@ gh() {
         adoption = ADOPTION.read_text(encoding="utf-8")
 
         for body in (consumer, actions, readme, adoption):
-            self.assertIn("v5.0.0", body)
+            self.assertIn("v5.1.0", body)
             self.assertNotIn("themasterplan-check.yml@v4.1.0", body)
             self.assertNotIn("policy-ref: v4.1.0", body)
 
-        self.assertIn("themasterplan-check.yml@v5.0.0", consumer)
-        self.assertIn("policy-ref: v5.0.0", consumer)
+        self.assertIn("themasterplan-check.yml@v5.1.0", consumer)
+        self.assertIn("policy-ref: v5.1.0", consumer)
         self.assertIn(
-            "v5.0.0      当前版不可变 Release tag",
+            "v5.1.0      本源码目标不可变 Release tag",
             channels,
         )
         self.assertIn(
